@@ -13,6 +13,7 @@ import org.apache.commons.collections4.queue.CircularFifoQueue;
 //
 import java.rmi.RemoteException;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 /**
  Created by kurila on 25.06.14.
@@ -43,6 +44,12 @@ implements RecordFrameBuffer<T> {
 	protected final void submitSync(final T item)
 	throws InterruptedException, RemoteException {
 		buff.get().add(item);
+	}
+	//
+	@Override
+	protected final void submitSync(final List<T> items)
+	throws InterruptedException, RemoteException {
+		buff.get().addAll(items);
 	}
 	//
 	@Override

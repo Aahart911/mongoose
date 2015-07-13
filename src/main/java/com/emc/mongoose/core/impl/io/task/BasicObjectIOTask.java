@@ -12,7 +12,9 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 //
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 /**
  Created by kurila on 23.12.14.
@@ -27,17 +29,18 @@ implements DataObjectIOTask<T> {
 		super(loadExecutor);
 	}
 	//
-	public final static Map<ObjectLoadExecutor, InstancePool<BasicObjectIOTask>>
+	public final static Map<ObjectLoadExecutor<?>, InstancePool<BasicObjectIOTask>>
 		INSTANCE_POOL_MAP = new HashMap<>();
 	//
-	public static BasicObjectIOTask getInstance(
-		final ObjectLoadExecutor loadExecutor, DataObject dataItem, final String nodeAddr
+	@SuppressWarnings("unchecked")
+	public static <T extends DataObject> BasicObjectIOTask<T> getInstance(
+		final ObjectLoadExecutor<T> loadExecutor, T dataItem, final String nodeAddr
 	) {
 		InstancePool<BasicObjectIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
 		if(instPool == null) {
 			try {
 				instPool = new InstancePool<>(
-					BasicObjectIOTask.class.getConstructor(ObjectLoadExecutor.class), loadExecutor
+					BasicObjectIOTask.class.getConstructor(loadExecutor.getClass()), loadExecutor
 				);
 				INSTANCE_POOL_MAP.put(loadExecutor, instPool);
 			} catch(final NoSuchMethodException e) {
@@ -46,6 +49,29 @@ implements DataObjectIOTask<T> {
 		}
 		//
 		return instPool.take(dataItem, nodeAddr);
+	}
+	//
+	@SuppressWarnings("unchecked")
+	public static <T extends DataObject> List<BasicObjectIOTask<T>> getInstances(
+		final ObjectLoadExecutor<T> loadExecutor, List<T> dataItems, final String nodeAddr
+	) {
+		InstancePool<BasicObjectIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
+		if(instPool == null) {
+			try {
+				instPool = new InstancePool<>(
+					BasicObjectIOTask.class.getConstructor(loadExecutor.getClass()), loadExecutor
+				);
+				INSTANCE_POOL_MAP.put(loadExecutor, instPool);
+			} catch(final NoSuchMethodException e) {
+				throw new IllegalStateException(e);
+			}
+		}
+		//
+		final List<BasicObjectIOTask<T>> tasks = new ArrayList<>(dataItems.size());
+		for(final DataObject dataItem : dataItems) {
+			tasks.add(instPool.take(dataItem, nodeAddr));
+		}
+		return tasks;
 	}
 	//
 	@Override

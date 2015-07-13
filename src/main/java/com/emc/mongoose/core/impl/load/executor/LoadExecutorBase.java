@@ -680,9 +680,20 @@ implements LoadExecutor<T> {
 		}
 	}
 	//
+	@Override
+	protected final void submitSync(final List<T> dataItems)
+	throws InterruptedException, RemoteException {
+
+	}
+	//
 	@SuppressWarnings("unchecked")
 	protected BasicIOTask<T> getIOTask(final T dataItem, final String nextNodeAddr) {
 		return BasicIOTask.getInstance(this, dataItem, nextNodeAddr);
+	}
+	//
+	@SuppressWarnings("unchecked")
+	protected List<BasicIOTask<T>> getIOTasks(final List<T> dataItems, final String nextNodeAddr) {
+		return BasicIOTask.getInstances(this, dataItems, nextNodeAddr);
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Balancing implementation
@@ -793,7 +804,7 @@ implements LoadExecutor<T> {
 			)
 			.setLoadElapsedTimeUnit(TimeUnit.NANOSECONDS)
 			.setLatencyValues(
-				respLatency == null ? new long[]{} : respLatency.getSnapshot().getValues()
+				respLatency == null ? new long[] {} : respLatency.getSnapshot().getValues()
 			);
 		//
 		return stateBuilder.build();

@@ -18,6 +18,8 @@ import org.apache.logging.log4j.Logger;
 //
 import java.io.IOException;
 import java.rmi.RemoteException;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 /**
  Created by kurila on 03.07.15.
@@ -40,10 +42,19 @@ implements ObjectStorage<T> {
 		createConsumer = new AsyncConsumerBase<T>(Long.MAX_VALUE, maxQueueSize, submTimeOutMilliSec) {
 			{ setDaemon(true); setName("asyncCreateWorker"); start(); }
 			@Override
-			protected final void submitSync(final T dataItem)
-			throws InterruptedException, RemoteException {
+			protected final void submitSync(final T dataItem) {
 				synchronized(itemIndex) {
 					itemIndex.put(dataItem.getId(), dataItem);
+				}
+			}
+			@Override
+			protected final void submitSync(final List<T> dataItems) {
+				final HashMap<String, T> items2insert = new HashMap<>();
+				for(final T dataItem : dataItems) {
+					items2insert.put(dataItem.getId(), dataItem);
+				}
+				synchronized(itemIndex) {
+					itemIndex.putAll(items2insert);
 				}
 			}
 		};
@@ -54,6 +65,14 @@ implements ObjectStorage<T> {
 			throws InterruptedException, RemoteException {
 				synchronized(itemIndex) {
 					itemIndex.remove(dataItem.getId());
+				}
+			}
+			@Override
+			protected final void submitSync(final List<T> dataItems) {
+				synchronized(itemIndex) {
+					for(final T dataItem : dataItems) {
+						itemIndex.remove(dataItem.getId());
+					}
 				}
 			}
 		};

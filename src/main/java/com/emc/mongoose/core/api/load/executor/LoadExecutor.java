@@ -10,6 +10,7 @@ import com.emc.mongoose.core.api.load.model.LoadState;
 import org.apache.logging.log4j.Marker;
 //
 import java.rmi.RemoteException;
+import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -54,6 +55,9 @@ extends Producer<T>, AsyncConsumer<T> {
 	throws RemoteException;
 	//
 	Future<IOTask.Status> submit(final IOTask<T> request)
+	throws RemoteException, RejectedExecutionException;
+	//
+	Future<List<IOTask.Status>> submitAll(final List<IOTask<T>> request)
 	throws RemoteException, RejectedExecutionException;
 	//
 	void handleResult(final IOTask<T> task)

@@ -11,12 +11,15 @@ import org.apache.logging.log4j.Logger;
 //
 import java.io.IOException;
 import java.rmi.RemoteException;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 /**
  Created by kurila on 26.05.15.
  */
@@ -35,7 +38,7 @@ implements AsyncConsumer<T> {
 		isShutdown = new AtomicBoolean(false),
 		isAllSubm = new AtomicBoolean(false);
 	// volatile
-	private final BlockingQueue<T> transientQueue;
+	private final BlockingQueue<T> queue;
 	//
 	public AsyncConsumerBase(
 		final long maxCount, final int maxQueueSize, final int submTimeOutMilliSec
@@ -43,7 +46,7 @@ implements AsyncConsumer<T> {
 		this.maxCount = maxCount > 0 ? maxCount : Long.MAX_VALUE;
 		this.maxQueueSize = (int) Math.min(this.maxCount, maxQueueSize);
 		this.submTimeOutMilliSec = submTimeOutMilliSec;
-		transientQueue = new ArrayBlockingQueue<>(maxQueueSize);
+		queue = new ArrayBlockingQueue<>(maxQueueSize);
 	}
 	//
 	@Override
@@ -74,10 +77,53 @@ implements AsyncConsumer<T> {
 			if(isShutdown.get()) {
 				throw new InterruptedException("Shut down already");
 			}
-			if(transientQueue.offer(item, submTimeOutMilliSec, TimeUnit.MILLISECONDS)) {
+			if(queue.offer(item, submTimeOutMilliSec, TimeUnit.MILLISECONDS)) {
 				counterPreSubm.incrementAndGet();
 			} else {
 				throw new RejectedExecutionException("Submit queue timeout");
+			}
+		} else {
+			throw new RejectedExecutionException("Consuming is not started yet");
+		}
+	}
+	//
+	private final Lock bulkInsertLock = new ReentrantLock();
+	/**
+	 May block the executing thread until the queue becomes able to ingest all the items
+	 @param items
+	 @throws RemoteException
+	 @throws InterruptedException if shutdown already
+	 @throws RejectedExecutionException if failed to insert at least one item from the specified list
+	 */
+	@Override
+	public void submit(final List<T> items)
+	throws RemoteException, InterruptedException, RejectedExecutionException {
+		if(isStarted.get()) {
+			if(items == null || counterPreSubm.get() >= maxCount) {
+				shutdown();
+			}
+			if(isShutdown.get()) {
+				throw new InterruptedException("Shut down already");
+			}
+			if(bulkInsertLock.tryLock(submTimeOutMilliSec, TimeUnit.MILLISECONDS)) {
+				try {
+					final long remaining = maxCount - counterPreSubm.get();
+					final List<T> items2insert;
+					if(remaining < items.size()) {
+						items2insert = items.subList(0, (int) remaining); // cast should be safe here
+					} else {
+						items2insert = items;
+					}
+					while(items2insert.size() < queue.remainingCapacity()) {
+						TimeUnit.MILLISECONDS.sleep(submTimeOutMilliSec);
+					}
+					if(!queue.addAll(items2insert)) {
+						throw new RejectedExecutionException("Failed to perform bulk queue insert");
+					}
+					counterPreSubm.addAndGet(items2insert.size());
+				} finally {
+					bulkInsertLock.unlock();
+				}
 			}
 		} else {
 			throw new RejectedExecutionException("Consuming is not started yet");
@@ -88,12 +134,12 @@ implements AsyncConsumer<T> {
 	public final void run() {
 		LOG.debug(
 			Markers.MSG, "Determined submit queue capacity of {} for \"{}\"",
-			transientQueue.remainingCapacity(), getName()
+			queue.remainingCapacity(), getName()
 		);
 		T nextItem;
 		try {
-			while(transientQueue.size() > 0 || !isShutdown.get()) {
-				nextItem = transientQueue.poll(submTimeOutMilliSec, TimeUnit.MILLISECONDS);
+			while(queue.size() > 0 || !isShutdown.get()) {
+				nextItem = queue.poll(submTimeOutMilliSec, TimeUnit.MILLISECONDS);
 				if(nextItem != null) {
 					submitSync(nextItem);
 				}
@@ -112,6 +158,9 @@ implements AsyncConsumer<T> {
 	}
 	//
 	protected abstract void submitSync(final T item)
+	throws InterruptedException, RemoteException;
+	//
+	protected abstract void submitSync(final List<T> item)
 	throws InterruptedException, RemoteException;
 	//
 	@Override
@@ -142,10 +191,10 @@ implements AsyncConsumer<T> {
 	public void close()
 	throws IOException {
 		shutdown();
-		final int dropCount = transientQueue.size();
+		final int dropCount = queue.size();
 		if(dropCount > 0) {
 			LOG.debug(Markers.MSG, "Dropped {} submit tasks", dropCount);
 		}
-		transientQueue.clear(); // dispose
+		queue.clear(); // dispose
 	}
 }

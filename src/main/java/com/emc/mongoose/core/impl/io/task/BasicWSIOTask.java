@@ -40,8 +40,10 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 /**
  Created by kurila on 06.06.14.
@@ -73,17 +75,18 @@ implements WSIOTask<T> {
 		}
 	}
 	//
-	public final static Map<WSLoadExecutor, InstancePool<BasicWSIOTask>>
+	public final static Map<WSLoadExecutor<?>, InstancePool<BasicWSIOTask>>
 		INSTANCE_POOL_MAP = new HashMap<>();
 	//
-	public static BasicWSIOTask getInstance(
-		final WSLoadExecutor loadExecutor, WSObject dataItem, final String nodeAddr
+	@SuppressWarnings("unchecked")
+	public static <T extends WSObject> BasicWSIOTask<T> getInstance(
+		final WSLoadExecutor<T> loadExecutor, T dataItem, final String nodeAddr
 	) {
 		InstancePool<BasicWSIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
 		if(instPool == null) {
 			try {
 				instPool = new InstancePool<>(
-					BasicWSIOTask.class.getConstructor(WSLoadExecutor.class), loadExecutor
+					BasicWSIOTask.class.getConstructor(loadExecutor.getClass()), loadExecutor
 				);
 				INSTANCE_POOL_MAP.put(loadExecutor, instPool);
 			} catch(final NoSuchMethodException e) {
@@ -92,6 +95,29 @@ implements WSIOTask<T> {
 		}
 		//
 		return instPool.take(dataItem, nodeAddr);
+	}
+	//
+	@SuppressWarnings("unchecked")
+	public static <T extends WSObject> List<BasicWSIOTask<T>> getInstances(
+		final WSLoadExecutor<T> loadExecutor, List<T> dataItems, final String nodeAddr
+	) {
+		InstancePool<BasicWSIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
+		if(instPool == null) {
+			try {
+				instPool = new InstancePool<>(
+					BasicWSIOTask.class.getConstructor(loadExecutor.getClass()), loadExecutor
+				);
+				INSTANCE_POOL_MAP.put(loadExecutor, instPool);
+			} catch(final NoSuchMethodException e) {
+				throw new IllegalStateException(e);
+			}
+		}
+		//
+		final List<BasicWSIOTask<T>> tasks = new ArrayList<>(dataItems.size());
+		for(final WSObject dataItem : dataItems) {
+			tasks.add(instPool.take(dataItem, nodeAddr));
+		}
+		return tasks;
 	}
 	//
 	@Override
@@ -498,7 +524,7 @@ implements WSIOTask<T> {
 	// FutureCallback<IOTask.Status> implementation ////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	@Override
-	public final void completed(final IOTask.Status status) {
+	public final void completed(final Object o) {
 		complete();
 	}
 	/**

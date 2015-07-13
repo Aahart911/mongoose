@@ -18,7 +18,7 @@ extends
 	HttpAsyncRequestProducer,
 	HttpAsyncResponseConsumer<IOTask.Status>,
 	HttpContext,
-	FutureCallback<IOTask.Status> {
+	FutureCallback {
 	//
 	@Override
 	WSIOTask<T> setDataItem(final T dataItem);

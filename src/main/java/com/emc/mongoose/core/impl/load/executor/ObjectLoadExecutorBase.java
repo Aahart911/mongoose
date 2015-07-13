@@ -2,13 +2,17 @@ package com.emc.mongoose.core.impl.load.executor;
 // mongoose-core-api.jar
 import com.emc.mongoose.core.api.io.req.conf.ObjectRequestConfig;
 import com.emc.mongoose.core.api.data.DataObject;
+import com.emc.mongoose.core.api.io.task.DataObjectIOTask;
+import com.emc.mongoose.core.api.io.task.IOTask;
 import com.emc.mongoose.core.api.load.executor.ObjectLoadExecutor;
 // mongoose-common.jar
 import com.emc.mongoose.common.conf.RunTimeConfig;
 // mongoose-core-impl.jar
+import com.emc.mongoose.core.impl.io.task.BasicIOTask;
 import com.emc.mongoose.core.impl.io.task.BasicObjectIOTask;
 //
 import java.io.IOException;
+import java.util.List;
 //
 //import org.apache.log.log4j.LogManager;
 //import org.apache.log.log4j.Logger;
@@ -38,6 +42,13 @@ implements ObjectLoadExecutor<T> {
 	@Override @SuppressWarnings("unchecked")
 	protected BasicObjectIOTask<T> getIOTask(final T dataItem, final String nextNodeAddr) {
 		return BasicObjectIOTask.getInstance(this, dataItem, nextNodeAddr);
+	}
+	//
+	@Override @SuppressWarnings("unchecked")
+	protected List<BasicObjectIOTask<T>> getIOTasks(
+		final List<T> dataItems, final String nextNodeAddr
+	) {
+		return BasicObjectIOTask.getInstances(this, dataItems, nextNodeAddr);
 	}
 	//
 	@Override

@@ -8,6 +8,7 @@ import com.emc.mongoose.common.net.http.request.SharedHeadersAdder;
 import com.emc.mongoose.common.net.http.request.HostHeaderSetter;
 import com.emc.mongoose.common.log.LogUtil;
 // mongoose-core-api.jar
+import com.emc.mongoose.core.api.data.DataItem;
 import com.emc.mongoose.core.api.data.WSObject;
 import com.emc.mongoose.core.api.io.task.IOTask;
 import com.emc.mongoose.core.api.io.task.WSIOTask;
@@ -20,20 +21,16 @@ import com.emc.mongoose.core.impl.load.tasks.HttpClientRunTask;
 //
 import org.apache.http.ExceptionLogger;
 import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
 import org.apache.http.config.ConnectionConfig;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
-import org.apache.http.impl.DefaultHttpResponseFactory;
-import org.apache.http.impl.nio.codecs.DefaultHttpResponseParserFactory;
 import org.apache.http.message.HeaderGroup;
-import org.apache.http.nio.NHttpMessageParserFactory;
-import org.apache.http.nio.util.DirectByteBufferAllocator;
 import org.apache.http.protocol.HttpProcessor;
 import org.apache.http.protocol.HttpProcessorBuilder;
 import org.apache.http.protocol.RequestConnControl;
 import org.apache.http.protocol.RequestContent;
 import org.apache.http.protocol.RequestUserAgent;
 //
+import org.apache.http.nio.util.DirectByteBufferAllocator;
 import org.apache.http.impl.nio.pool.BasicNIOConnPool;
 import org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor;
 import org.apache.http.impl.nio.DefaultHttpClientIODispatch;
@@ -56,6 +53,8 @@ import java.io.IOException;
 //import java.util.HashMap;
 //import java.util.Map;
 //import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -232,7 +231,7 @@ implements WSLoadExecutor<T> {
 			futureResult = client.execute(wsTask, wsTask, connPool, wsTask, wsTask);
 			if(LOG.isTraceEnabled(Markers.MSG)) {
 				LOG.trace(
-					Markers.MSG, "I/O task #{} has been submitted for execution: {}1",
+					Markers.MSG, "I/O task #{} has been submitted for execution: {}",
 					wsTask.hashCode(), futureResult
 				);
 			}
@@ -242,9 +241,43 @@ implements WSLoadExecutor<T> {
 		return futureResult;
 	}
 	//
+	@Override
+	public final Future<List<IOTask.Status>> submitAll(final List<IOTask<T>> ioTask)
+	throws RejectedExecutionException {
+		//
+		if(connPool.isShutdown()) {
+			throw new RejectedExecutionException("Connection pool is shut down");
+		}
+		//
+		final List<WSIOTask<T>> wsTasks = List.class.cast(ioTask);
+		final WSIOTask<T> anyTask = wsTasks.get(0);
+		final Future<List<IOTask.Status>> futureResults;
+		try {
+			futureResults = client.executePipelined(
+				anyTask.getTarget(), wsTasks, wsTasks, connPool, anyTask, anyTask
+			);
+			if(LOG.isTraceEnabled(Markers.MSG)) {
+				LOG.trace(
+					Markers.MSG, "{} I/O tasks have been submitted for execution to {}",
+					anyTask.getTarget()
+				);
+			}
+		} catch(final Exception e) {
+			throw new RejectedExecutionException(e);
+		}
+		return futureResults;
+	}
+	//
 	@Override @SuppressWarnings("unchecked")
 	protected BasicWSIOTask<T> getIOTask(final T dataItem, final String nextNodeAddr) {
 		return BasicWSIOTask.getInstance(this, dataItem, nextNodeAddr);
+	}
+	//
+	@Override
+	protected List<BasicWSIOTask<T>> getIOTasks(
+		final List<T> dataItems, final String nextNodeAddr
+	) {
+		return BasicWSIOTask.getInstances(this, dataItems, nextNodeAddr);
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Balancing based on the connection pool stats

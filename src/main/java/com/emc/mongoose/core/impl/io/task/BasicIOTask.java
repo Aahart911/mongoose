@@ -16,7 +16,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 //
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 /**
  Created by andrey on 12.10.14.
@@ -52,17 +54,18 @@ implements IOTask<T> {
 		}
 	}
 	//
-	public final static Map<LoadExecutor, InstancePool<BasicIOTask>>
+	public final static Map<LoadExecutor<?>, InstancePool<BasicIOTask>>
 		INSTANCE_POOL_MAP = new HashMap<>();
 	//
-	public static BasicIOTask getInstance(
-		final LoadExecutor loadExecutor, DataItem dataItem, final String nodeAddr
+	@SuppressWarnings("unchecked")
+	public static <T extends DataItem> BasicIOTask<T> getInstance(
+		final LoadExecutor<T> loadExecutor, T dataItem, final String nodeAddr
 	) {
 		InstancePool<BasicIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
 		if(instPool == null) {
 			try {
 				instPool = new InstancePool<>(
-					BasicIOTask.class.getConstructor(LoadExecutor.class), loadExecutor
+					BasicIOTask.class.getConstructor(loadExecutor.getClass()), loadExecutor
 				);
 				INSTANCE_POOL_MAP.put(loadExecutor, instPool);
 			} catch(final NoSuchMethodException e) {
@@ -71,6 +74,29 @@ implements IOTask<T> {
 		}
 		//
 		return instPool.take(dataItem, nodeAddr);
+	}
+	//
+	@SuppressWarnings("unchecked")
+	public static <T extends DataItem> List<BasicIOTask<T>> getInstances(
+		final LoadExecutor<T> loadExecutor, List<T> dataItems, final String nodeAddr
+	) {
+		InstancePool<BasicIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
+		if(instPool == null) {
+			try {
+				instPool = new InstancePool<>(
+					BasicIOTask.class.getConstructor(loadExecutor.getClass()), loadExecutor
+				);
+				INSTANCE_POOL_MAP.put(loadExecutor, instPool);
+			} catch(final NoSuchMethodException e) {
+				throw new IllegalStateException(e);
+			}
+		}
+		//
+		final List<BasicIOTask<T>> tasks = new ArrayList<>(dataItems.size());
+		for(final T dataItem : dataItems) {
+			tasks.add(instPool.take(dataItem, nodeAddr));
+		}
+		return tasks;
 	}
 	//
 	@Override @SuppressWarnings("unchecked")
