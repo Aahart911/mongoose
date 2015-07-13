@@ -60,7 +60,7 @@ implements RequestConfig<T> {
 		port = runTimeConfig.getApiTypePort(api);
 		nameSpace = runTimeConfig.getStorageNameSpace();
 		buffSize = (int) runTimeConfig.getDataBufferSize();
-		reqSleepMilliSec = runTimeConfig.getRunReqTimeOutMilliSec();
+		reqSleepMilliSec = runTimeConfig.getLoadLimitReqSleepMilliSec();
 	}
 	//
 	protected RequestConfigBase(final RequestConfig<T> reqConf2Clone) {
