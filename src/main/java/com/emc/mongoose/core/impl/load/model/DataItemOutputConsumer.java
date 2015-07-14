@@ -27,8 +27,8 @@ implements Consumer<T> {
 	//
 	public DataItemOutputConsumer(final DataItemOutput<T> itemOut) {
 		super(
-			Long.MAX_VALUE, RunTimeConfig.getContext().getRunRequestQueueSize(),
-			RunTimeConfig.getContext().getRunSubmitTimeOutMilliSec()
+			Long.MAX_VALUE, RunTimeConfig.getContext().getTasksMaxQueueSize(),
+			RunTimeConfig.getContext().getTasksSubmitTimeOutMilliSec()
 		);
 		this.itemOut = itemOut;
 	}
