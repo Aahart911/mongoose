@@ -224,7 +224,7 @@ implements WSLoadExecutor<T> {
 	}
 	//
 	@Override
-	public final Future<IOTask.Status> submit(final IOTask<T> ioTask)
+	public final Future submit(final IOTask<T> ioTask)
 	throws RejectedExecutionException {
 		//
 		if(connPool.isShutdown()) {
@@ -232,7 +232,7 @@ implements WSLoadExecutor<T> {
 		}
 		//
 		final WSIOTask<T> wsTask = (WSIOTask<T>) ioTask;
-		final Future<IOTask.Status> futureResult;
+		final Future futureResult;
 		try {
 			futureResult = client.execute(wsTask, wsTask, connPool, wsTask, wsTask);
 			if(LOG.isTraceEnabled(Markers.MSG)) {
@@ -248,7 +248,7 @@ implements WSLoadExecutor<T> {
 	}
 	//
 	@Override
-	public final Future<List<IOTask.Status>> submitAll(final List<IOTask<T>> ioTask)
+	public final Future<List> submitAll(final List<IOTask<T>> ioTask)
 	throws RejectedExecutionException {
 		//
 		if(connPool.isShutdown()) {
@@ -257,7 +257,7 @@ implements WSLoadExecutor<T> {
 		//
 		final List<WSIOTask<T>> wsTasks = List.class.cast(ioTask);
 		final WSIOTask<T> anyTask = wsTasks.get(0);
-		final Future<List<IOTask.Status>> futureResults;
+		final Future<List> futureResults;
 		try {
 			futureResults = client.executePipelined(
 				anyTask.getTarget(), wsTasks, wsTasks, connPool, anyTask, anyTask
