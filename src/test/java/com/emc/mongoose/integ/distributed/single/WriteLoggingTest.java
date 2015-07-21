@@ -52,6 +52,8 @@ public class WriteLoggingTest {
 	@BeforeClass
 	public static void setUpClass()
 	throws Exception {
+		LogParser.getPerfAvgFile(RUN_ID);
+		LogParser.getPerfSumFile(RUN_ID);
 		TimeUnit.SECONDS.sleep(5);
 		// reinit run id and the log path
 		RunTimeConfig

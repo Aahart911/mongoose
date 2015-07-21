@@ -51,6 +51,7 @@ public class SequentialLoadTest {
 	@BeforeClass
 	public static void setUpClass()
 	throws Exception {
+		LogParser.getPerfSumFile(RUN_ID).delete();
 		LOG = LogManager.getLogger();
 		final RunTimeConfig rtConfig = RunTimeConfig.getContext();
 		rtConfig.set(RunTimeConfig.KEY_RUN_ID, RUN_ID);

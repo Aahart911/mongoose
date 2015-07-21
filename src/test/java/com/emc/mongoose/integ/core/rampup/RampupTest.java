@@ -1,18 +1,20 @@
-package com.emc.mongoose.integ.distributed.rampup;
+package com.emc.mongoose.integ.core.rampup;
 //
-import com.emc.mongoose.common.conf.Constants;
 import com.emc.mongoose.common.conf.RunTimeConfig;
 //
 import com.emc.mongoose.core.api.load.builder.LoadBuilder;
 //
-import com.emc.mongoose.integ.suite.StdOutInterceptorTestSuite;
-import com.emc.mongoose.integ.tools.BufferingOutputStream;
-import com.emc.mongoose.integ.tools.LogParser;
 import com.emc.mongoose.util.scenario.Rampup;
 import com.emc.mongoose.util.scenario.shared.WSLoadBuilderFactory;
 //
+import com.emc.mongoose.integ.suite.StdOutInterceptorTestSuite;
+import com.emc.mongoose.integ.tools.BufferingOutputStream;
+import com.emc.mongoose.integ.tools.LogParser;
+import static com.emc.mongoose.integ.tools.LogPatterns.CONSOLE_METRICS_SUM;
+//
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
+//
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 //
@@ -29,8 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
-
-import static com.emc.mongoose.integ.tools.LogPatterns.CONSOLE_METRICS_SUM_CLIENT;
 /**
  Created by andrey on 17.07.15.
  */
@@ -39,8 +39,8 @@ public class RampupTest {
 	private final static String
 		RUN_ID = RampupTest.class.getCanonicalName(),
 		LOAD_SEQ[] = {"create", "read", "delete"},
-		SIZE_SEQ[] = {"1KB", "10KB", "100KB"},
-		THREAD_COUNT_SEQ[] = {"1", "10", "100"};
+		SIZE_SEQ[] = {"1KB", "2KB", "5KB", "10KB", "20KB", "50KB", "100KB"},
+		THREAD_COUNT_SEQ[] = {"1", "2", "5", "10", "20", "50", "100"};
 	private final static int
 		LOAD_LIMIT_TIME_SEC = 25,
 		PRECISION_SEC = 10,
@@ -60,7 +60,6 @@ public class RampupTest {
 		rtConfig.set(RunTimeConfig.KEY_SCENARIO_CHAIN_CONCURRENT, false);
 		rtConfig.set(RunTimeConfig.KEY_LOAD_LIMIT_TIME, Long.toString(LOAD_LIMIT_TIME_SEC) + "s");
 		rtConfig.set(RunTimeConfig.KEY_LOAD_METRICS_PERIOD_SEC, 0);
-		rtConfig.set(RunTimeConfig.KEY_RUN_MODE, Constants.RUN_MODE_CLIENT);
 		try(final LoadBuilder loadBuilder = WSLoadBuilderFactory.getInstance(rtConfig)) {
 			final Rampup rampupScenario = new Rampup(
 				loadBuilder, LOAD_LIMIT_TIME_SEC, TimeUnit.SECONDS,
@@ -110,7 +109,7 @@ public class RampupTest {
 				if(nextStdOutLine == null) {
 					break;
 				} else {
-					m = CONSOLE_METRICS_SUM_CLIENT.matcher(nextStdOutLine);
+					m = CONSOLE_METRICS_SUM.matcher(nextStdOutLine);
 					if(m.find()) {
 						countSummaries ++;
 					}
@@ -159,11 +158,8 @@ public class RampupTest {
 					Assert.assertEquals("BW5Min[MB/s]", nextRec.get(19));
 					Assert.assertEquals("BW15Min[MB/s]", nextRec.get(20));
 				} else {
-					if(nextRec.size() == 21) {
-						final String countSrvStr = nextRec.get(6);
-						if(countSrvStr.length() > 0 && Integer.parseInt(countSrvStr) == 1) {
-							countSummaries++;
-						}
+					if(nextRec.size() > 2) { // if not delimeter line
+						countSummaries++;
 					}
 				}
 			}

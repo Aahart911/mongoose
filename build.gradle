@@ -1040,9 +1040,9 @@ test {
 }
 
 task integTest(type: Test, dependsOn: compileRMI) {
-	//Be able to run only test suit
-	include '**/CoreTestSuite.class'
-	include '**/DistributedLoadTestSuite.class'
+	//include '**/CoreTestSuite.class'
+	//include '**/DistributedLoadTestSuite.class'
+	include '**/WSMockTestSuite.class'
 
 	testClassesDir = sourceSets.integTest.output.classesDir
 	classpath = sourceSets.integTest.runtimeClasspath

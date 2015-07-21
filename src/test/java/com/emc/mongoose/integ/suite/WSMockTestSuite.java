@@ -10,10 +10,16 @@ import com.emc.mongoose.storage.mock.impl.web.data.BasicWSObjectMock;
 import org.apache.logging.log4j.LogManager;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 /**
  Created by kurila on 14.07.15.
  */
-public abstract class WSMockTestSuite
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+	com.emc.mongoose.integ.core.rampup.RampupTest.class
+})
+public class WSMockTestSuite
 extends ConfiguredTestSuite {
 	//
 	private static Storage<BasicWSObjectMock> WSMOCK;

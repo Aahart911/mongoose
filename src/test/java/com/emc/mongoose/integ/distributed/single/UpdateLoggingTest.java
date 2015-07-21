@@ -59,6 +59,8 @@ public class UpdateLoggingTest {
 		RunTimeConfig
 			.getContext()
 			.set(RunTimeConfig.KEY_RUN_ID, RUN_ID);
+		LogParser.getPerfAvgFile(RUN_ID);
+		LogParser.getPerfSumFile(RUN_ID);
 		LoggingTestSuite.setUpClass();
 		//
 		final StorageClientBuilder<WSObject, StorageClient<WSObject>>

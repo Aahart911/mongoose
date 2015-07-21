@@ -48,6 +48,7 @@ public class SimultaneousLoadTest {
 	@BeforeClass
 	public static void setUpClass()
 	throws Exception {
+		LogParser.getPerfSumFile(RUN_ID).delete();
 		final RunTimeConfig rtConfig = RunTimeConfig.getContext();
 		rtConfig.set(RunTimeConfig.KEY_RUN_ID, RUN_ID);
 		rtConfig.set(RunTimeConfig.KEY_RUN_MODE, Constants.RUN_MODE_CLIENT);
