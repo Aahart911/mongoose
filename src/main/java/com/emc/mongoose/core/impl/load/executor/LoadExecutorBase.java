@@ -202,7 +202,10 @@ implements LoadExecutor<T> {
 		//
 		this.dataCls = dataCls;
 		this.rtConfig = rtConfig;
-		instanceNum = NEXT_INSTANCE_NUM.getAndIncrement();
+		if (!INSTANCE_NUMBERS.containsKey(rtConfig.getRunId())) {
+			INSTANCE_NUMBERS.put(rtConfig.getRunId(), new AtomicInteger(0));
+		}
+		instanceNum = INSTANCE_NUMBERS.get(rtConfig.getRunId()).getAndIncrement();
 		storageNodeCount = addrs.length;
 		//
 		setName(
@@ -650,10 +653,10 @@ implements LoadExecutor<T> {
 		final IOTask<T> ioTask = getIOTask(dataItem, nextNodeAddr);
 		// try to sleep while underlying connection pool becomes more free if it's going too fast
 		// warning: w/o such sleep the behaviour becomes very ugly
-		while(
-			!isAllSubm.get() && !isInterrupted.get() &&
-			counterSubm.getCount() - counterResults.get() >= maxQueueSize
-		) {
+		while(counterSubm.getCount() - counterResults.get() >= maxQueueSize) {
+			if(isAllSubm.get() || isInterrupted.get()) {
+				throw new RejectedExecutionException("Enough");
+			}
 			Thread.sleep(1);
 		}
 		//

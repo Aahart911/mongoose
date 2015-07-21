@@ -11,9 +11,6 @@ import com.emc.mongoose.core.api.io.req.conf.RequestConfig;
 import com.emc.mongoose.core.api.data.AppendableDataItem;
 import com.emc.mongoose.core.api.data.UpdatableDataItem;
 //
-// mongoose-core-impl.jar
-import com.emc.mongoose.core.impl.load.model.FileProducer;
-//
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 //
@@ -47,7 +44,7 @@ extends LimitedRateLoadExecutorBase<T> {
 		);
 		//
 		this.loadType = reqConfig.getLoadType();
-		//
+		// TODO
 		int buffSize;
 		if(producer != null && FileProducer.class.isInstance(producer)) {
 			final long approxDataItemSize = ((FileProducer) producer).getApproxDataItemsSize();

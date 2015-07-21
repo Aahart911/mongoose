@@ -85,7 +85,7 @@ implements Runnable {
 	public final void run() {
 		if(isConcurrent) {
 			LOG.info(Markers.MSG, "Execute load jobs in parallel");
-			for(int i = loadJobSeq.size(); i >= 0; i --) {
+			for(int i = loadJobSeq.size() - 1; i >= 0; i --) {
 				try {
 					loadJobSeq.get(i).start();
 				} catch(final RemoteException e) {
@@ -166,19 +166,18 @@ implements Runnable {
 	//
 	public static void main(final String... args) {
 		//
-		try {
-			RunTimeConfig.initContext();
-			final RunTimeConfig runTimeConfig = RunTimeConfig.getContext();
-			// load the config from CLI arguments
-			final Map<String, String> properties = HumanFriendly.parseCli(args);
-			if(!properties.isEmpty()) {
-				LOG.debug(Markers.MSG, "Overriding properties {}", properties);
-				RunTimeConfig.getContext().overrideSystemProperties(properties);
-			}
-			//
-			LOG.info(Markers.MSG, RunTimeConfig.getContext().toString());
-			//
-			final LoadBuilder loadBuilder = WSLoadBuilderFactory.getInstance(runTimeConfig);
+		RunTimeConfig.initContext();
+		final RunTimeConfig runTimeConfig = RunTimeConfig.getContext();
+		// load the config from CLI arguments
+		final Map<String, String> properties = HumanFriendly.parseCli(args);
+		if(properties != null && !properties.isEmpty()) {
+			LOG.debug(Markers.MSG, "Overriding properties {}", properties);
+			RunTimeConfig.getContext().overrideSystemProperties(properties);
+		}
+		//
+		LOG.info(Markers.MSG, RunTimeConfig.getContext().toString());
+		//
+		try(final LoadBuilder loadBuilder = WSLoadBuilderFactory.getInstance(runTimeConfig)) {
 			final long timeOut = runTimeConfig.getLoadLimitTimeValue();
 			final TimeUnit timeUnit = runTimeConfig.getLoadLimitTimeUnit();
 			//

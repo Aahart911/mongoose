@@ -57,7 +57,7 @@ implements LoadBuilderClient<T, U> {
 		for(final String serverAddr : remoteServers) {
 			LOG.info(Markers.MSG, "Resolving service @ \"{}\"...", serverAddr);
 			loadBuilderSvc = resolve(serverAddr);
-			nextInstanceN = loadBuilderSvc.getNextInstanceNum();
+			nextInstanceN = loadBuilderSvc.getNextInstanceNum(runTimeConfig.getRunId());
 			if(nextInstanceN > maxLastInstanceN) {
 				maxLastInstanceN = nextInstanceN;
 			}
@@ -67,7 +67,7 @@ implements LoadBuilderClient<T, U> {
 		setProperties(runTimeConfig);
 		//
 		for(final String serverAddr : remoteServers) {
-			get(serverAddr).setNextInstanceNum(maxLastInstanceN);
+			get(serverAddr).setNextInstanceNum(runTimeConfig.getRunId(), maxLastInstanceN);
 		}
 	}
 	//
@@ -142,6 +142,9 @@ implements LoadBuilderClient<T, U> {
 	@Override
 	public final LoadBuilderClient<T, U> setRequestConfig(final RequestConfig<T> reqConf)
 	throws ClassCastException, RemoteException {
+		if(this.reqConf.equals(reqConf)) {
+			return this;
+		}
 		try {
 			this.reqConf.close(); // see jira ticket #437
 		} catch(final IOException e) {
@@ -300,7 +303,8 @@ implements LoadBuilderClient<T, U> {
 	public String toString() {
 		StringBuilder strBuilder = new StringBuilder(reqConf.toString());
 		try {
-			strBuilder.append('-').append(get(keySet().iterator().next()).getNextInstanceNum());
+			strBuilder.append('-').append(get(keySet().iterator().next())
+				.getNextInstanceNum(runTimeConfig.getRunId()));
 		} catch(final RemoteException e) {
 			LogUtil.exception(LOG, Level.WARN, e, "Failed to make load builder string");
 		}

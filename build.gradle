@@ -213,6 +213,7 @@ sourceSets {
 		java {
 			srcDir(['src', 'test'].join(File.separator))
 			include(['java', 'com', 'emc', 'mongoose', 'core', '**'].join(File.separator))
+			include(['java', 'com', 'emc', 'mongoose', 'common', '**'].join(File.separator))
 		}
 	}
 	integTest {
@@ -434,6 +435,7 @@ dependencies {
 
 	integTestCompile(
 		library.junit,
+		library.commons_csv,
 	)
 }
 
@@ -920,6 +922,9 @@ task testJar(type: Jar) {
 				configurations.testRuntime.collect {
 					libsDirName + File.separator + it.getName()
 				}.join(' '),
+				configurations.integTestRuntime.collect {
+					libsDirName + File.separator + it.getName()
+				}.join(' '),
 			].join(' ')
 		)
 	}
@@ -1005,7 +1010,10 @@ idea {
 		scopes = [
 			COMPILE: [plus: [configurations.compile], minus: []],
 			RUNTIME: [plus: [configurations.runtime], minus: [configurations.compile]],
-			TEST: [plus: [configurations.testRuntime], minus: [configurations.runtime]]
+			TEST: [
+				plus: [configurations.testRuntime, configurations.integTestRuntime],
+				minus: [configurations.runtime]
+			],
 		]
 		//for cleaning mongoose.iml
 		iml{
@@ -1025,16 +1033,21 @@ idea {
 test {
 	jvmArgs '-Dlog4j.configurationFile=' + new File("").getCanonicalPath() + "${File.separator}${confDirName}${File.separator}logging.json"
 	jvmArgs '-Dlog4j.configurationFactory=org.apache.logging.log4j.core.config.json.JsonConfigurationFactory'
+	jvmArgs '-Djava.security.policy=file:' + new File("").getCanonicalPath() +
+		"${File.separator}src${File.separator}main${File.separator}resources${File.separator}allpermissions.policy"
 	testLogging.showStandardStreams = true
 	testLogging { events "passed", "skipped", "failed" }
 }
 
-task integTest(type: Test){
+task integTest(type: Test, dependsOn: compileRMI) {
+	//include '**/CoreTestSuite.class'
+	//include '**/DistributedLoadTestSuite.class'
+	include '**/WSMockTestSuite.class'
+
 	testClassesDir = sourceSets.integTest.output.classesDir
 	classpath = sourceSets.integTest.runtimeClasspath
-	jvmArgs '-Dlog4j.configurationFile=' + new File("").getCanonicalPath() + "${File.separator}${confDirName}${File.separator}logging.json"
-	jvmArgs '-Dlog4j.configurationFactory=org.apache.logging.log4j.core.config.json.JsonConfigurationFactory'
-	jvmArgs '-Djava.security.policy=file:/home/olga/mongoose/vipr-mongoose/src/main/resources/allpermissions.policy'
+	jvmArgs '-Djava.security.policy=file:' + new File("").getCanonicalPath() +
+		"${File.separator}src${File.separator}main${File.separator}resources${File.separator}allpermissions.policy"
 	testLogging.showStandardStreams = true
 	testLogging { events "passed", "skipped", "failed" }
 }

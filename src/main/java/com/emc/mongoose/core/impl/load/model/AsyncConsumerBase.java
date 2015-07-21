@@ -138,9 +138,12 @@ implements AsyncConsumer<T> {
 		);
 		T nextItem;
 		try {
+			// finish if queue is empty and the state is "shutdown"
 			while(queue.size() > 0 || !isShutdown.get()) {
+				// TODO get all the available elements from the queue
 				nextItem = queue.poll(submTimeOutMilliSec, TimeUnit.MILLISECONDS);
 				if(nextItem != null) {
+					// TODO batch submitSync
 					submitSync(nextItem);
 				}
 			}
