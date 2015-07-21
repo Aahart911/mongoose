@@ -40,12 +40,12 @@ implements ObjectLoadExecutor<T> {
 	}
 	//
 	@Override @SuppressWarnings("unchecked")
-	protected BasicObjectIOTask<T> getIOTask(final T dataItem, final String nextNodeAddr) {
+	protected IOTask<T> getIOTask(final T dataItem, final String nextNodeAddr) {
 		return BasicObjectIOTask.getInstance(this, dataItem, nextNodeAddr);
 	}
 	//
 	@Override @SuppressWarnings("unchecked")
-	protected List<BasicObjectIOTask<T>> getIOTasks(
+	protected List<IOTask<T>> getIOTasks(
 		final List<T> dataItems, final String nextNodeAddr
 	) {
 		return BasicObjectIOTask.getInstances(this, dataItems, nextNodeAddr);

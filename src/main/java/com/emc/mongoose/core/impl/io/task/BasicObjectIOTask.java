@@ -6,6 +6,7 @@ import com.emc.mongoose.common.log.Markers;
 // mongoose-core-api.jar
 import com.emc.mongoose.core.api.io.task.DataObjectIOTask;
 import com.emc.mongoose.core.api.data.DataObject;
+import com.emc.mongoose.core.api.io.task.IOTask;
 import com.emc.mongoose.core.api.load.executor.ObjectLoadExecutor;
 //
 import org.apache.logging.log4j.Level;
@@ -33,14 +34,14 @@ implements DataObjectIOTask<T> {
 		INSTANCE_POOL_MAP = new HashMap<>();
 	//
 	@SuppressWarnings("unchecked")
-	public static <T extends DataObject> BasicObjectIOTask<T> getInstance(
+	public static <T extends DataObject> IOTask<T> getInstance(
 		final ObjectLoadExecutor<T> loadExecutor, T dataItem, final String nodeAddr
 	) {
 		InstancePool<BasicObjectIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
 		if(instPool == null) {
 			try {
 				instPool = new InstancePool<>(
-					BasicObjectIOTask.class.getConstructor(loadExecutor.getClass()), loadExecutor
+					BasicObjectIOTask.class.getConstructor(ObjectLoadExecutor.class), loadExecutor
 				);
 				INSTANCE_POOL_MAP.put(loadExecutor, instPool);
 			} catch(final NoSuchMethodException e) {
@@ -52,14 +53,14 @@ implements DataObjectIOTask<T> {
 	}
 	//
 	@SuppressWarnings("unchecked")
-	public static <T extends DataObject> List<BasicObjectIOTask<T>> getInstances(
+	public static <T extends DataObject> List<IOTask<T>> getInstances(
 		final ObjectLoadExecutor<T> loadExecutor, List<T> dataItems, final String nodeAddr
 	) {
 		InstancePool<BasicObjectIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
 		if(instPool == null) {
 			try {
 				instPool = new InstancePool<>(
-					BasicObjectIOTask.class.getConstructor(loadExecutor.getClass()), loadExecutor
+					BasicObjectIOTask.class.getConstructor(ObjectLoadExecutor.class), loadExecutor
 				);
 				INSTANCE_POOL_MAP.put(loadExecutor, instPool);
 			} catch(final NoSuchMethodException e) {
@@ -67,7 +68,7 @@ implements DataObjectIOTask<T> {
 			}
 		}
 		//
-		final List<BasicObjectIOTask<T>> tasks = new ArrayList<>(dataItems.size());
+		final List<IOTask<T>> tasks = new ArrayList<>(dataItems.size());
 		for(final DataObject dataItem : dataItems) {
 			tasks.add(instPool.take(dataItem, nodeAddr));
 		}

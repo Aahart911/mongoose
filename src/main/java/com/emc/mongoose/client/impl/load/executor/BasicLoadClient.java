@@ -49,8 +49,10 @@ import javax.management.remote.JMXConnector;
 import java.io.IOException;
 import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -665,6 +667,32 @@ implements LoadClient<T> {
 		}
 	}
 	//
+	@Override
+	public final void submit(final List<T> dataItemsSrc)
+	throws RejectedExecutionException, InterruptedException {
+		Future remoteSubmFuture = null;
+		String nextLoadSvcAddr;
+		final List<T> dataItemsDst = new ArrayList<>(dataItemsSrc == null ? 0 : dataItemsSrc.size());
+		Collections.copy(dataItemsDst, dataItemsSrc);
+		for(
+			int tryCount = 0;
+			tryCount < Short.MAX_VALUE && remoteSubmFuture == null && !isShutdown();
+			tryCount ++
+			) {
+			try {
+				nextLoadSvcAddr = loadSvcAddrs[(rrc.get() + tryCount) % loadSvcAddrs.length];
+				remoteSubmFuture = submit(
+					RemoteSubmitTask.getInstance(
+						remoteLoadMap.get(nextLoadSvcAddr), dataItemsDst
+					)
+				);
+				rrc.incrementAndGet();
+			} catch(final RejectedExecutionException e) {
+				Thread.sleep(tryCount);
+			}
+		}
+	}
+	//
 	private void forceFetchAndAggregation() {
 		final ExecutorService forcedAggregator = Executors.newFixedThreadPool(
 			fetchItemsBuffTasks.size() + metricFetchTasks.size(),
@@ -849,11 +877,19 @@ implements LoadClient<T> {
 	}
 	//
 	@Override
-	public final Future<IOTask.Status> submit(final IOTask<T> request)
+	public final Future submit(final IOTask<T> request)
 	throws RemoteException {
 		return remoteLoadMap
 			.get(loadSvcAddrs[(int) (getTaskCount() % loadSvcAddrs.length)])
 			.submit(request);
+	}
+	//
+	@Override
+	public final Future submitAll(final List<IOTask<T>> requests)
+		throws RemoteException {
+		return remoteLoadMap
+			.get(loadSvcAddrs[(int) (getTaskCount() % loadSvcAddrs.length)])
+			.submitAll(requests);
 	}
 	//
 	@Override

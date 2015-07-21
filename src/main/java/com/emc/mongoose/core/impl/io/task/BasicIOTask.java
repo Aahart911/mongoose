@@ -58,14 +58,14 @@ implements IOTask<T> {
 		INSTANCE_POOL_MAP = new HashMap<>();
 	//
 	@SuppressWarnings("unchecked")
-	public static <T extends DataItem> BasicIOTask<T> getInstance(
+	public static <T extends DataItem> IOTask<T> getInstance(
 		final LoadExecutor<T> loadExecutor, T dataItem, final String nodeAddr
 	) {
 		InstancePool<BasicIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
 		if(instPool == null) {
 			try {
 				instPool = new InstancePool<>(
-					BasicIOTask.class.getConstructor(loadExecutor.getClass()), loadExecutor
+					BasicIOTask.class.getConstructor(LoadExecutor.class), loadExecutor
 				);
 				INSTANCE_POOL_MAP.put(loadExecutor, instPool);
 			} catch(final NoSuchMethodException e) {
@@ -77,14 +77,14 @@ implements IOTask<T> {
 	}
 	//
 	@SuppressWarnings("unchecked")
-	public static <T extends DataItem> List<BasicIOTask<T>> getInstances(
+	public static <T extends DataItem> List<IOTask<T>> getInstances(
 		final LoadExecutor<T> loadExecutor, List<T> dataItems, final String nodeAddr
 	) {
 		InstancePool<BasicIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
 		if(instPool == null) {
 			try {
 				instPool = new InstancePool<>(
-					BasicIOTask.class.getConstructor(loadExecutor.getClass()), loadExecutor
+					BasicIOTask.class.getConstructor(LoadExecutor.class), loadExecutor
 				);
 				INSTANCE_POOL_MAP.put(loadExecutor, instPool);
 			} catch(final NoSuchMethodException e) {
@@ -92,7 +92,7 @@ implements IOTask<T> {
 			}
 		}
 		//
-		final List<BasicIOTask<T>> tasks = new ArrayList<>(dataItems.size());
+		final List<IOTask<T>> tasks = new ArrayList<>(dataItems.size());
 		for(final T dataItem : dataItems) {
 			tasks.add(instPool.take(dataItem, nodeAddr));
 		}

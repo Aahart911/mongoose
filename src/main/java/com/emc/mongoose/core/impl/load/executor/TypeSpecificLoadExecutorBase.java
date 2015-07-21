@@ -14,6 +14,8 @@ import com.emc.mongoose.core.api.data.UpdatableDataItem;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 //
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.rmi.RemoteException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
@@ -44,42 +46,6 @@ extends LimitedRateLoadExecutorBase<T> {
 		);
 		//
 		this.loadType = reqConfig.getLoadType();
-		// TODO
-		int buffSize;
-		if(producer != null && FileProducer.class.isInstance(producer)) {
-			final long approxDataItemSize = ((FileProducer) producer).getApproxDataItemsSize();
-			if(approxDataItemSize < Constants.BUFF_SIZE_LO) {
-				buffSize = Constants.BUFF_SIZE_LO;
-			} else if(approxDataItemSize > Constants.BUFF_SIZE_HI) {
-				buffSize = Constants.BUFF_SIZE_HI;
-			} else {
-				buffSize = (int) approxDataItemSize;
-			}
-		} else {
-			if(sizeMin == sizeMax) {
-				LOG.debug(Markers.MSG, "Fixed data item size: {}", SizeUtil.formatSize(sizeMin));
-				buffSize = sizeMin < Constants.BUFF_SIZE_HI ? (int) sizeMin : Constants.BUFF_SIZE_HI;
-			} else {
-				final long t = (sizeMin + sizeMax) / 2;
-				buffSize = t < Constants.BUFF_SIZE_HI ? (int) t : Constants.BUFF_SIZE_HI;
-				LOG.debug(
-					Markers.MSG, "Average data item size: {}",
-					SizeUtil.formatSize(buffSize)
-				);
-			}
-			if(buffSize < Constants.BUFF_SIZE_LO) {
-				LOG.debug(
-					Markers.MSG, "Buffer size {} is less than lower bound {}",
-					SizeUtil.formatSize(buffSize), SizeUtil.formatSize(Constants.BUFF_SIZE_LO)
-				);
-				buffSize = Constants.BUFF_SIZE_LO;
-			}
-		}
-		LOG.debug(
-			Markers.MSG, "Determined buffer size of {} for \"{}\"",
-			SizeUtil.formatSize(buffSize), getName()
-		);
-		this.reqConfigCopy.setBuffSize(buffSize);
 		//
 		switch(loadType) {
 			case APPEND:

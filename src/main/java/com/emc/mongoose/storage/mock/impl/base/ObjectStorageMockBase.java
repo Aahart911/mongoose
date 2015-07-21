@@ -38,8 +38,11 @@ implements ObjectStorage<T> {
 		itemIndex = new LRUMap<>(rtConfig.getStorageMockCapacity());
 		final int
 			maxQueueSize = rtConfig.getTasksMaxQueueSize(),
-			submTimeOutMilliSec = rtConfig.getTasksSubmitTimeOutMilliSec();
-		createConsumer = new AsyncConsumerBase<T>(Long.MAX_VALUE, maxQueueSize, submTimeOutMilliSec) {
+			submTimeOutMilliSec = rtConfig.getTasksSubmitTimeOutMilliSec(),
+			batchSize = rtConfig.getBatchSize();
+		createConsumer = new AsyncConsumerBase<T>(
+			Long.MAX_VALUE, maxQueueSize, submTimeOutMilliSec, batchSize
+		) {
 			{ setDaemon(true); setName("asyncCreateWorker"); start(); }
 			@Override
 			protected final void submitSync(final T dataItem) {
@@ -58,7 +61,9 @@ implements ObjectStorage<T> {
 				}
 			}
 		};
-		deleteConsumer = new AsyncConsumerBase<T>(Long.MAX_VALUE, maxQueueSize, submTimeOutMilliSec) {
+		deleteConsumer = new AsyncConsumerBase<T>(
+			Long.MAX_VALUE, maxQueueSize, submTimeOutMilliSec, batchSize
+		) {
 			{ setDaemon(true); setName("asyncDeleteWorker"); start(); }
 			@Override
 			protected final void submitSync(final T dataItem)

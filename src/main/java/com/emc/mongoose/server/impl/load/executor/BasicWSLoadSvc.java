@@ -45,7 +45,7 @@ implements WSLoadSvc<T> {
 			sizeMin, sizeMax, sizeBias, rateLimit, countUpdPerReq
 		);
 		// by default, may be overriden later externally:
-		super.setConsumer(new FrameBuffConsumer<>(dataCls, runTimeConfig, maxCount));
+		super.setConsumer(new FrameBuffConsumer<T>(runTimeConfig, maxCount));
 	}
 	//
 	@Override

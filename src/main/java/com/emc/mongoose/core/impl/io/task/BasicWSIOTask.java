@@ -1,6 +1,7 @@
 package com.emc.mongoose.core.impl.io.task;
 // mongoose-common
 import com.emc.mongoose.common.collections.InstancePool;
+import com.emc.mongoose.common.collections.Reusable;
 import com.emc.mongoose.common.conf.SizeUtil;
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.common.net.http.content.OutputChannel;
@@ -24,6 +25,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.RequestLine;
 import org.apache.http.StatusLine;
+import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.message.HeaderGroup;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HTTP;
@@ -74,19 +76,19 @@ implements WSIOTask<T> {
 			httpRequest.setMethod(wsReqConf.getHTTPMethod());
 		}
 	}
-	//
+	////////////////////////////////////////////////////////////////////////////////////////////////
 	public final static Map<WSLoadExecutor<?>, InstancePool<BasicWSIOTask>>
 		INSTANCE_POOL_MAP = new HashMap<>();
 	//
 	@SuppressWarnings("unchecked")
-	public static <T extends WSObject> BasicWSIOTask<T> getInstance(
+	public static <T extends WSObject> IOTask<T> getInstance(
 		final WSLoadExecutor<T> loadExecutor, T dataItem, final String nodeAddr
 	) {
 		InstancePool<BasicWSIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
 		if(instPool == null) {
 			try {
 				instPool = new InstancePool<>(
-					BasicWSIOTask.class.getConstructor(loadExecutor.getClass()), loadExecutor
+					BasicWSIOTask.class.getConstructor(WSLoadExecutor.class), loadExecutor
 				);
 				INSTANCE_POOL_MAP.put(loadExecutor, instPool);
 			} catch(final NoSuchMethodException e) {
@@ -98,14 +100,14 @@ implements WSIOTask<T> {
 	}
 	//
 	@SuppressWarnings("unchecked")
-	public static <T extends WSObject> List<BasicWSIOTask<T>> getInstances(
+	public static <T extends WSObject> List<IOTask<T>> getInstances(
 		final WSLoadExecutor<T> loadExecutor, List<T> dataItems, final String nodeAddr
 	) {
 		InstancePool<BasicWSIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
 		if(instPool == null) {
 			try {
 				instPool = new InstancePool<>(
-					BasicWSIOTask.class.getConstructor(loadExecutor.getClass()), loadExecutor
+					BasicWSIOTask.class.getConstructor(WSLoadExecutor.class), loadExecutor
 				);
 				INSTANCE_POOL_MAP.put(loadExecutor, instPool);
 			} catch(final NoSuchMethodException e) {
@@ -113,7 +115,7 @@ implements WSIOTask<T> {
 			}
 		}
 		//
-		final List<BasicWSIOTask<T>> tasks = new ArrayList<>(dataItems.size());
+		final List<IOTask<T>> tasks = new ArrayList<>(dataItems.size());
 		for(final WSObject dataItem : dataItems) {
 			tasks.add(instPool.take(dataItem, nodeAddr));
 		}
@@ -136,7 +138,54 @@ implements WSIOTask<T> {
 			instPool.release(this);
 		}
 	}
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	public final static class BatchFutureCallback
+	implements FutureCallback<List<WSIOTask>>, Reusable<BatchFutureCallback> {
+		//
+		public BatchFutureCallback() {}
+		//
+		@Override
+		public final void completed(final List<WSIOTask> results) {
+			for(final WSIOTask t : results) {
+				t.completed(t);
+			}
+		}
+		//
+		@Override
+		public final void failed(final Exception e) {
+			LogUtil.exception(LOG, Level.DEBUG, e, "Batch I/O task failure");
+		}
+		//
+		@Override
+		public final void cancelled() {
+			LOG.debug(Markers.MSG, "Batch I/O task cancellation");
+		}
+		//
+		@Override
+		public Reusable<BatchFutureCallback> reuse(final Object... args)
+		throws IllegalArgumentException, IllegalStateException {
+			return this;
+		}
+		//
+		@Override
+		public void release() {
+			BATCH_CALLBACK_POOL.release(this);
+		}
+	}
 	//
+	private final static InstancePool<BatchFutureCallback> BATCH_CALLBACK_POOL;
+	static {
+		try {
+			BATCH_CALLBACK_POOL = new InstancePool<>(BatchFutureCallback.class.getConstructor());
+		} catch(NoSuchMethodException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	//
+	public static FutureCallback<List<WSIOTask>> getBatchFutureCallback() {
+		return BATCH_CALLBACK_POOL.take();
+	}
+	////////////////////////////////////////////////////////////////////////////////////////////////
 	@Override
 	public final WSIOTask<T> setDataItem(final T dataItem) {
 		try {
@@ -484,8 +533,8 @@ implements WSIOTask<T> {
 	}
 	//
 	@Override
-	public final IOTask.Status getResult() {
-		return status;
+	public final WSIOTask<T> getResult() {
+		return isDone() ? this : null;
 	}
 	//
 	@Override

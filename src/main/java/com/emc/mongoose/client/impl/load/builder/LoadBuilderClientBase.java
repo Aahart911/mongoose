@@ -6,10 +6,9 @@ import com.emc.mongoose.common.log.Markers;
 // mongoose-core-api.jar
 import com.emc.mongoose.core.api.data.DataItem;
 import com.emc.mongoose.core.api.load.executor.LoadExecutor;
+import com.emc.mongoose.core.api.load.model.Producer;
 import com.emc.mongoose.core.api.io.task.IOTask;
 import com.emc.mongoose.core.api.io.req.conf.RequestConfig;
-// mongoose-core-impl.jar
-import com.emc.mongoose.core.impl.load.model.FileProducer;
 // mongoose-client.jar
 import com.emc.mongoose.client.api.load.builder.LoadBuilderClient;
 // mongoose-server-api.jar
@@ -36,7 +35,7 @@ implements LoadBuilderClient<T, U> {
 	//
 	private final static Logger LOG = LogManager.getLogger();
 	//
-	protected FileProducer<T> srcProducer = null;
+	protected Producer<T> producer = null;
 	protected String[] dataNodeAddrs = null;
 	protected volatile RunTimeConfig runTimeConfig;
 	protected volatile RequestConfig<T> reqConf = getDefaultRequestConfig();

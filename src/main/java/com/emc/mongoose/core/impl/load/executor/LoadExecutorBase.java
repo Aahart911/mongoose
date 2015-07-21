@@ -10,6 +10,7 @@ import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.UniformReservoir;
 import com.emc.mongoose.common.conf.Constants;
 import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.SizeUtil;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.common.net.ServiceUtils;
@@ -196,8 +197,8 @@ implements LoadExecutor<T> {
 		final long sizeMin, final long sizeMax, final float sizeBias
 	) {
 		super(
-			maxCount, rtConfig.getTasksMaxQueueSize(),
-			rtConfig.getTasksSubmitTimeOutMilliSec()
+			maxCount, rtConfig.getTasksMaxQueueSize(), rtConfig.getTasksSubmitTimeOutMilliSec(),
+			rtConfig.getBatchSize()
 		);
 		//
 		this.dataCls = dataCls;
@@ -261,6 +262,26 @@ implements LoadExecutor<T> {
 		ioTaskSpentQueue = new ArrayBlockingQueue<>(maxQueueSize);
 		dataSrc = reqConfig.getDataSource();
 		//
+		int buffSize;
+		if(sizeMin == sizeMax) {
+			LOG.debug(Markers.MSG, "Fixed data item size: {}", SizeUtil.formatSize(sizeMin));
+			buffSize = sizeMin < Constants.BUFF_SIZE_HI ? (int) sizeMin : Constants.BUFF_SIZE_HI;
+		} else {
+			final long t = (sizeMin + sizeMax) / 2;
+			buffSize = t < Constants.BUFF_SIZE_HI ? (int) t : Constants.BUFF_SIZE_HI;
+			LOG.debug(
+				Markers.MSG, "Average data item size: {}",
+				SizeUtil.formatSize(buffSize)
+			);
+		}
+		if(buffSize < Constants.BUFF_SIZE_LO) {
+			LOG.debug(
+				Markers.MSG, "Buffer size {} is less than lower bound {}",
+				SizeUtil.formatSize(buffSize), SizeUtil.formatSize(Constants.BUFF_SIZE_LO)
+			);
+			buffSize = Constants.BUFF_SIZE_LO;
+		}
+		//
 		if(listFile != null && listFile.length() > 0) {
 			final Path dataItemsListPath = Paths.get(listFile);
 			if(!Files.exists(dataItemsListPath)) {
@@ -275,12 +296,21 @@ implements LoadExecutor<T> {
 				);
 			} else {
 				try {
-					producer = new DataItemInputProducer<>(
-						new CSVFileItemInput<>(Paths.get(listFile), dataCls)
+					final CSVFileItemInput<T> itemsInput = new CSVFileItemInput<>(
+						Paths.get(listFile), dataCls
 					);
+					producer = new DataItemInputProducer<>(itemsInput);
 					LOG.debug(
 						Markers.MSG, "{} will use file-based producer: {}", getName(), listFile
 					);
+					final long avgItemsSize = itemsInput.getAvgItemsSize();
+					if(avgItemsSize < Constants.BUFF_SIZE_LO) {
+						buffSize = Constants.BUFF_SIZE_LO;
+					} else if(avgItemsSize > Constants.BUFF_SIZE_HI) {
+						buffSize = Constants.BUFF_SIZE_HI;
+					} else {
+						buffSize = (int) avgItemsSize;
+					}
 				} catch(final NoSuchMethodException | IOException e) {
 					LogUtil.exception(
 						LOG, Level.FATAL, e,
@@ -305,6 +335,14 @@ implements LoadExecutor<T> {
 		} else {
 			producer = reqConfig.getAnyDataProducer(maxCount, addrs[0]);
 			LOG.debug(Markers.MSG, "{} will use {} as data items producer", getName(), producer);
+		}
+		//
+		LOG.debug(
+			Markers.MSG, "Determined buffer size of {} for \"{}\"",
+			SizeUtil.formatSize(buffSize), getName()
+		);
+		if(reqConfigCopy != null) {
+			reqConfigCopy.setBuffSize(buffSize);
 		}
 		//
 		if(producer != null) {
@@ -677,16 +715,51 @@ implements LoadExecutor<T> {
 	@Override
 	protected final void submitSync(final List<T> dataItems)
 	throws InterruptedException, RemoteException {
-
+		final long countRemain = maxCount - counterSubm.getCount() + counterRej.getCount();
+		if(countRemain <= 0) {
+			LOG.debug(
+				Markers.MSG, "{}: all tasks has been submitted ({}) or rejected ({})", getName(),
+				counterSubm.getCount(), counterRej.getCount()
+			);
+			super.interrupt();
+			return;
+		}
+		// prepare the I/O task instance (make the link between the data item and load type)
+		final String nextNodeAddr = storageNodeCount == 1 ? storageNodeAddrs[0] : getNextNode();
+		final List<IOTask<T>> ioTasks = getIOTasks(
+			countRemain < dataItems.size() ? dataItems.subList(0, (int) countRemain) : dataItems,
+			nextNodeAddr
+		);
+		// try to sleep while underlying connection pool becomes more free if it's going too fast
+		// warning: w/o such sleep the behaviour becomes very ugly
+		while(counterSubm.getCount() - counterResults.get() >= maxQueueSize) {
+			if(isAllSubm.get() || isInterrupted.get()) {
+				throw new RejectedExecutionException("Enough");
+			}
+			Thread.sleep(1);
+		}
+		//
+		try {
+			if(null == submitAll(ioTasks)) {
+				throw new RejectedExecutionException("Null future returned");
+			}
+			counterSubm.inc();
+			activeTasksStats.get(nextNodeAddr).incrementAndGet(); // increment node's usage counter
+		} catch(final RejectedExecutionException e) {
+			if(!isInterrupted.get()) {
+				counterRej.inc(countRemain);
+				LogUtil.exception(LOG, Level.DEBUG, e, "Rejected {} I/O tasks", countRemain);
+			}
+		}
 	}
 	//
 	@SuppressWarnings("unchecked")
-	protected BasicIOTask<T> getIOTask(final T dataItem, final String nextNodeAddr) {
+	protected IOTask<T> getIOTask(final T dataItem, final String nextNodeAddr) {
 		return BasicIOTask.getInstance(this, dataItem, nextNodeAddr);
 	}
 	//
 	@SuppressWarnings("unchecked")
-	protected List<BasicIOTask<T>> getIOTasks(final List<T> dataItems, final String nextNodeAddr) {
+	protected List<IOTask<T>> getIOTasks(final List<T> dataItems, final String nextNodeAddr) {
 		return BasicIOTask.getInstances(this, dataItems, nextNodeAddr);
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////

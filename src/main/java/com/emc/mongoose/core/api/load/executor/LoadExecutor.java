@@ -60,7 +60,7 @@ extends Producer<T>, AsyncConsumer<T> {
 	Future submit(final IOTask<T> request)
 	throws RemoteException, RejectedExecutionException;
 	//
-	Future<List> submitAll(final List<IOTask<T>> request)
+	Future submitAll(final List<IOTask<T>> request)
 	throws RemoteException, RejectedExecutionException;
 	//
 	void handleResult(final IOTask<T> task)

@@ -16,7 +16,7 @@ public interface
 extends
 	DataObjectIOTask<T>,
 	HttpAsyncRequestProducer,
-	HttpAsyncResponseConsumer<IOTask.Status>,
+	HttpAsyncResponseConsumer<WSIOTask>,
 	HttpContext,
 	FutureCallback {
 	//

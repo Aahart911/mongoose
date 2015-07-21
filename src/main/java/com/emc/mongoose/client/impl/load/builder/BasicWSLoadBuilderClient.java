@@ -3,6 +3,8 @@ package com.emc.mongoose.client.impl.load.builder;
 import com.emc.mongoose.core.api.io.req.conf.WSRequestConfig;
 import com.emc.mongoose.core.api.data.WSObject;
 // mongoose-server-api.jar
+import com.emc.mongoose.core.impl.data.model.CSVFileItemInput;
+import com.emc.mongoose.core.impl.load.model.DataItemInputProducer;
 import com.emc.mongoose.server.api.load.builder.LoadBuilderSvc;
 import com.emc.mongoose.server.api.load.builder.WSLoadBuilderSvc;
 import com.emc.mongoose.server.api.load.executor.LoadSvc;
@@ -15,7 +17,6 @@ import com.emc.mongoose.common.net.Service;
 import com.emc.mongoose.common.net.ServiceUtils;
 // mongoose-core-impl.jar
 import com.emc.mongoose.core.impl.data.BasicWSObject;
-import com.emc.mongoose.core.impl.load.model.FileProducer;
 import com.emc.mongoose.core.impl.io.req.conf.WSRequestConfigBase;
 // mongoose-client.jar
 import com.emc.mongoose.client.impl.load.executor.BasicWSLoadClient;
@@ -31,6 +32,7 @@ import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.nio.file.Paths;
 import java.rmi.RemoteException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -83,12 +85,13 @@ implements WSLoadBuilderClient<T, U> {
 	throws RemoteException {
 		if(listFile != null) {
 			try {
-				srcProducer = (FileProducer<T>) new FileProducer<>(
-					getMaxCount(), listFile, BasicWSObject.class
+				final CSVFileItemInput<T> itemsInput = new CSVFileItemInput<>(
+					Paths.get(listFile), (Class<T>) BasicWSObject.class
 				);
+				producer = new DataItemInputProducer<>(itemsInput);
 				LOG.info(Markers.MSG, "Local data items will be read from file @ \"{}\"", listFile);
 				// adjusting the buffer size for the expected data items size
-				final long approxDataItemsSize = srcProducer.getApproxDataItemsSize();
+				final long approxDataItemsSize = itemsInput.getAvgItemsSize();
 				reqConf.setBuffSize(
 					approxDataItemsSize < Constants.BUFF_SIZE_LO ?
 						Constants.BUFF_SIZE_LO :
@@ -164,16 +167,16 @@ implements WSLoadBuilderClient<T, U> {
 		//
 		newLoadClient = new BasicWSLoadClient<>(
 			runTimeConfig, remoteLoadMap, remoteJMXConnMap, (WSRequestConfig<T>) reqConf,
-			runTimeConfig.getLoadLimitCount(), srcProducer
+			runTimeConfig.getLoadLimitCount(), producer
 		);
-		if(srcProducer != null && srcProducer.getConsumer() == null) {
+		if(producer != null && producer.getConsumer() == null) {
 			LOG.debug(
 				Markers.MSG, "Append consumer {} for producer {}",
-				newLoadClient.getName(), srcProducer.getName()
+				newLoadClient.getName(), producer
 			);
-			srcProducer.setConsumer(newLoadClient);
+			producer.setConsumer(newLoadClient);
 		}
-		srcProducer = null;
+		producer = null;
 		LOG.debug(Markers.MSG, "Load client {} created", newLoadClient.getName());
 		//
 		return (U) newLoadClient;

@@ -8,7 +8,6 @@ import com.emc.mongoose.common.net.http.request.SharedHeadersAdder;
 import com.emc.mongoose.common.net.http.request.HostHeaderSetter;
 import com.emc.mongoose.common.log.LogUtil;
 // mongoose-core-api.jar
-import com.emc.mongoose.core.api.data.DataItem;
 import com.emc.mongoose.core.api.data.WSObject;
 import com.emc.mongoose.core.api.io.task.IOTask;
 import com.emc.mongoose.core.api.io.task.WSIOTask;
@@ -50,10 +49,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 //
 import java.io.IOException;
-//import java.util.HashMap;
-//import java.util.Map;
-//import java.util.Set;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
@@ -248,7 +243,7 @@ implements WSLoadExecutor<T> {
 	}
 	//
 	@Override
-	public final Future<List> submitAll(final List<IOTask<T>> ioTask)
+	public final Future submitAll(final List<IOTask<T>> ioTask)
 	throws RejectedExecutionException {
 		//
 		if(connPool.isShutdown()) {
@@ -257,10 +252,11 @@ implements WSLoadExecutor<T> {
 		//
 		final List<WSIOTask<T>> wsTasks = List.class.cast(ioTask);
 		final WSIOTask<T> anyTask = wsTasks.get(0);
-		final Future<List> futureResults;
+		final Future futureResults;
 		try {
 			futureResults = client.executePipelined(
-				anyTask.getTarget(), wsTasks, wsTasks, connPool, anyTask, anyTask
+				anyTask.getTarget(), wsTasks, wsTasks, connPool, anyTask,
+				BasicWSIOTask.getBatchFutureCallback()
 			);
 			if(LOG.isTraceEnabled(Markers.MSG)) {
 				LOG.trace(
@@ -275,12 +271,12 @@ implements WSLoadExecutor<T> {
 	}
 	//
 	@Override @SuppressWarnings("unchecked")
-	protected BasicWSIOTask<T> getIOTask(final T dataItem, final String nextNodeAddr) {
+	protected IOTask<T> getIOTask(final T dataItem, final String nextNodeAddr) {
 		return BasicWSIOTask.getInstance(this, dataItem, nextNodeAddr);
 	}
 	//
 	@Override
-	protected List<BasicWSIOTask<T>> getIOTasks(
+	protected List<IOTask<T>> getIOTasks(
 		final List<T> dataItems, final String nextNodeAddr
 	) {
 		return BasicWSIOTask.getInstances(this, dataItems, nextNodeAddr);

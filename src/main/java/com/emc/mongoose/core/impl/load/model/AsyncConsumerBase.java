@@ -11,6 +11,8 @@ import org.apache.logging.log4j.Logger;
 //
 import java.io.IOException;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -30,7 +32,7 @@ implements AsyncConsumer<T> {
 	private final static Logger LOG = LogManager.getLogger();
 	// configuration params
 	private final long maxCount;
-	protected final int submTimeOutMilliSec, maxQueueSize;
+	protected final int submTimeOutMilliSec, maxQueueSize, batchSize;
 	// states
 	private final AtomicLong counterPreSubm = new AtomicLong(0);
 	protected final AtomicBoolean
@@ -41,11 +43,13 @@ implements AsyncConsumer<T> {
 	private final BlockingQueue<T> queue;
 	//
 	public AsyncConsumerBase(
-		final long maxCount, final int maxQueueSize, final int submTimeOutMilliSec
+		final long maxCount, final int maxQueueSize, final int submTimeOutMilliSec,
+		final int batchSize
 	) {
 		this.maxCount = maxCount > 0 ? maxCount : Long.MAX_VALUE;
 		this.maxQueueSize = (int) Math.min(this.maxCount, maxQueueSize);
 		this.submTimeOutMilliSec = submTimeOutMilliSec;
+		this.batchSize = batchSize;
 		queue = new ArrayBlockingQueue<>(maxQueueSize);
 	}
 	//
@@ -90,7 +94,7 @@ implements AsyncConsumer<T> {
 	private final Lock bulkInsertLock = new ReentrantLock();
 	/**
 	 May block the executing thread until the queue becomes able to ingest all the items
-	 @param items
+	 @param items shouldn't be null!
 	 @throws RemoteException
 	 @throws InterruptedException if shutdown already
 	 @throws RejectedExecutionException if failed to insert at least one item from the specified list
@@ -136,15 +140,15 @@ implements AsyncConsumer<T> {
 			Markers.MSG, "Determined submit queue capacity of {} for \"{}\"",
 			queue.remainingCapacity(), getName()
 		);
-		T nextItem;
+		final List<T> itemBuffer = new ArrayList<>(batchSize);
 		try {
 			// finish if queue is empty and the state is "shutdown"
 			while(queue.size() > 0 || !isShutdown.get()) {
-				// TODO get all the available elements from the queue
-				nextItem = queue.poll(submTimeOutMilliSec, TimeUnit.MILLISECONDS);
-				if(nextItem != null) {
-					// TODO batch submitSync
-					submitSync(nextItem);
+				queue.drainTo(itemBuffer);
+				if(itemBuffer.size() > 0) {
+					submitSync(itemBuffer);
+				} else {
+					Thread.sleep(submTimeOutMilliSec);
 				}
 			}
 			LOG.debug(Markers.MSG, "{}: consuming finished", getName());

@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.rmi.RemoteException;
+import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 /**
@@ -47,7 +48,7 @@ implements AccumulatorProducer<T> {
 	) {
 		super(
 			maxCount, runTimeConfig.getTasksMaxQueueSize(),
-			runTimeConfig.getTasksSubmitTimeOutMilliSec()
+			runTimeConfig.getTasksSubmitTimeOutMilliSec(), runTimeConfig.getBatchSize()
 		);
 		//
 		this.dataCls = itemCls;
@@ -99,6 +100,21 @@ implements AccumulatorProducer<T> {
 					tmpFileOutput.write(item);
 				}
 				count ++;
+			} catch(final IOException e) {
+				throw new RejectedExecutionException(e);
+			}
+		}
+	}
+	//
+	@Override
+	protected void submitSync(final List<T> itemBuffer)
+	throws InterruptedException, RemoteException {
+		if(itemBuffer != null && itemBuffer.size() > 0) {
+			try {
+				synchronized(tmpFileOutput) {
+					tmpFileOutput.write(itemBuffer);
+				}
+				count += itemBuffer.size();
 			} catch(final IOException e) {
 				throw new RejectedExecutionException(e);
 			}
