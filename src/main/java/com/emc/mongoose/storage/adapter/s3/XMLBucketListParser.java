@@ -96,14 +96,14 @@ extends DefaultHandler {
 					if (offset < 0) {
 						LOG.warn(Markers.ERR, "Calculated from id ring offset is negative");
 					} else if (count < maxCount) {
-						consumer.submit(dataConstructor.newInstance(strId, offset, size));
+						consumer.feed(dataConstructor.newInstance(strId, offset, size));
 						count ++;
 					} else {
 						endDocument();
 					}
 				} catch(final RemoteException e) {
 					LogUtil.exception(
-						LOG, Level.WARN, e, "Failed to submit new data object to the consumer"
+						LOG, Level.WARN, e, "Failed to feed new data object to the consumer"
 					);
 				} catch(final  RejectedExecutionException e) {
 					LogUtil.exception(LOG, Level.DEBUG, e, "Consumer rejected the data object");

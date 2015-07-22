@@ -1,5 +1,6 @@
 package com.emc.mongoose.core.api.load.executor;
 //
+import com.emc.mongoose.common.collections.ReusableList;
 import com.emc.mongoose.core.api.io.req.conf.RequestConfig;
 import com.emc.mongoose.core.api.io.task.IOTask;
 import com.emc.mongoose.core.api.data.DataItem;
@@ -12,7 +13,6 @@ import org.apache.logging.log4j.Marker;
 import java.rmi.RemoteException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -57,10 +57,10 @@ extends Producer<T>, AsyncConsumer<T> {
 	RequestConfig<T> getRequestConfig()
 	throws RemoteException;
 	//
-	Future submit(final IOTask<T> request)
+	Future submitRequest(final IOTask<T> request)
 	throws RemoteException, RejectedExecutionException;
 	//
-	Future submitAll(final List<IOTask<T>> request)
+	Future submitRequests(final ReusableList<IOTask<T>> request)
 	throws RemoteException, RejectedExecutionException;
 	//
 	void handleResult(final IOTask<T> task)

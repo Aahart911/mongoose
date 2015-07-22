@@ -2,6 +2,7 @@ package com.emc.mongoose.client.impl.load.executor.tasks;
 //
 import com.emc.mongoose.common.collections.InstancePool;
 import com.emc.mongoose.common.collections.Reusable;
+import com.emc.mongoose.common.collections.ReusableList;
 import com.emc.mongoose.common.log.LogUtil;
 //
 import com.emc.mongoose.common.log.Markers;
@@ -34,14 +35,14 @@ implements Runnable, Reusable<RemoteSubmitTask> {
 	//
 	@SuppressWarnings("unchecked")
 	public static <T extends DataItem> RemoteSubmitTask<T> getInstance(
-		final LoadSvc<T> loadSvc, final List<T> dataItems
+		final LoadSvc<T> loadSvc, final ReusableList<T> dataItems
 	) {
 		return INSTANCE_POOL.take(loadSvc, dataItems);
 	}
 	//
 	private LoadSvc<T> loadSvc = null;
 	private T dataItem = null;
-	private List<T> dataItems = null;
+	private ReusableList<T> dataItems = null;
 	//
 	@Override @SuppressWarnings("unchecked")
 	public final RemoteSubmitTask reuse(final Object... args)
@@ -52,7 +53,7 @@ implements Runnable, Reusable<RemoteSubmitTask> {
 			}
 			if(args.length > 1) {
 				if(List.class.isInstance(args[1])) {
-					dataItems = (List<T>) args[1];
+					dataItems = (ReusableList<T>) args[1];
 					dataItem = null;
 				} else {
 					dataItems = null;
@@ -65,6 +66,7 @@ implements Runnable, Reusable<RemoteSubmitTask> {
 	//
 	@Override
 	public final void release() {
+		dataItems.release();
 		INSTANCE_POOL.release(this);
 	}
 	//
@@ -73,17 +75,17 @@ implements Runnable, Reusable<RemoteSubmitTask> {
 	void run() {
 		try {
 			if(dataItem != null) {
-				loadSvc.submit(dataItem);
+				loadSvc.feed(dataItem);
 			} else if(dataItems != null) {
 				if(dataItems.size() > 0) {
-					loadSvc.submit(dataItems);
+					loadSvc.feedAll(dataItems);
 				}
 			} else {
-				LOG.debug(Markers.ERR, "Empty remote submit task");
+				LOG.debug(Markers.ERR, "Empty remote feeding task");
 			}
 		} catch(final InterruptedException ignored) {
 		} catch(RemoteException e){
-			LogUtil.exception(LOG, Level.WARN, e, "Failed to submit the data item {}", dataItem);
+			LogUtil.exception(LOG, Level.WARN, e, "Failed to feed the data item {}", dataItem);
 		} finally {
 			release();
 		}

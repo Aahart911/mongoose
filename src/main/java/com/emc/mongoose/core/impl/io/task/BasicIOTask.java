@@ -16,7 +16,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 //
 import java.rmi.RemoteException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +58,7 @@ implements IOTask<T> {
 	//
 	@SuppressWarnings("unchecked")
 	public static <T extends DataItem> IOTask<T> getInstance(
-		final LoadExecutor<T> loadExecutor, T dataItem, final String nodeAddr
+		T dataItem, final LoadExecutor<T> loadExecutor, final String nodeAddr
 	) {
 		InstancePool<BasicIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
 		if(instPool == null) {
@@ -77,8 +76,9 @@ implements IOTask<T> {
 	}
 	//
 	@SuppressWarnings("unchecked")
-	public static <T extends DataItem> List<IOTask<T>> getInstances(
-		final LoadExecutor<T> loadExecutor, List<T> dataItems, final String nodeAddr
+	public static <T extends DataItem> void getInstances(
+		final List<IOTask<T>> taskBuff, List<T> dataItems, final int maxCount,
+		final LoadExecutor<T> loadExecutor, final String nodeAddr
 	) {
 		InstancePool<BasicIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
 		if(instPool == null) {
@@ -91,12 +91,10 @@ implements IOTask<T> {
 				throw new IllegalStateException(e);
 			}
 		}
-		//
-		final List<IOTask<T>> tasks = new ArrayList<>(dataItems.size());
-		for(final T dataItem : dataItems) {
-			tasks.add(instPool.take(dataItem, nodeAddr));
+		// TODO work in bulk mode
+		for(int i = 0; i < maxCount; i ++) {
+			taskBuff.add(instPool.take(dataItems.get(i), nodeAddr));
 		}
-		return tasks;
 	}
 	//
 	@Override @SuppressWarnings("unchecked")

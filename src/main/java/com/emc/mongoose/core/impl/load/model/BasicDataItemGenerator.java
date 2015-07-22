@@ -16,6 +16,8 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -28,16 +30,18 @@ implements Producer<T> {
 	//
 	private final static Logger LOG = LogManager.getLogger();
 	//
+	private final int batchSize;
 	private final long maxCount, minObjSize, maxObjSize;
 	private final float objSizeBias;
 	private final Constructor<T> dataConstructor;
 	private Consumer<T> newDataConsumer;
 	//
 	public BasicDataItemGenerator(
-		final Class<T> dataCls,
-		final long maxCount, final long minObjSize, final long maxObjSize, final float objSizeBias
+		final Class<T> dataCls, final long maxCount, final int batchSize,
+		final long minObjSize, final long maxObjSize, final float objSizeBias
 	) throws NoSuchMethodException {
 		this.maxCount = maxCount > 0 ? maxCount : Long.MAX_VALUE;
+		this.batchSize = batchSize;
 		this.minObjSize = minObjSize;
 		this.maxObjSize = maxObjSize;
 		this.objSizeBias = objSizeBias;
@@ -69,14 +73,15 @@ implements Producer<T> {
 	}
 	//
 	private final static String
-		MSG_SUBMIT_REJECTED = "Submitting the object rejected by consumer",
-		MSG_SUBMIT_FAILED = "Failed to submit object to consumer",
+		MSG_SUBMIT_REJECTED = "Feeding the object rejected by the consumer",
+		MSG_SUBMIT_FAILED = "Failed to feed the object to the consumer",
 		MSG_INTERRUPTED = "Interrupted";
 	//
 	@Override
 	public final void run() {
 		final long sizeRange = maxObjSize - minObjSize;
 		final ThreadLocalRandom thrLocalRnd = ThreadLocalRandom.current();
+		final List<T> itemsBuffer = new ArrayList<>(batchSize);
 		//
 		LOG.debug(
 			Markers.MSG, "Will try to produce up to {} objects of {} size", maxCount,
@@ -85,8 +90,8 @@ implements Producer<T> {
 				SizeUtil.formatSize(minObjSize)+".."+ SizeUtil.formatSize(maxObjSize)
 		);
 		//
-		long i = 0, nextSize;
-		while(i < maxCount && !isInterrupted()) {
+		long i, nextSize;
+		for(i = 0; i < maxCount && !isInterrupted(); i ++) {
 			try {
 				if(minObjSize == maxObjSize) {
 					nextSize = minObjSize;
@@ -100,8 +105,17 @@ implements Producer<T> {
 					}
 					nextSize += minObjSize;
 				}
-				newDataConsumer.submit(dataConstructor.newInstance(nextSize));
-				i ++;
+				itemsBuffer.add(dataConstructor.newInstance(nextSize));
+				if(itemsBuffer.size() == batchSize || i == maxCount - 1) {
+					newDataConsumer.feedAll(itemsBuffer);
+					if(LOG.isTraceEnabled(Markers.MSG)) {
+						LOG.trace(
+							Markers.MSG, "Fed successfully {} items to the consumer",
+							itemsBuffer.size()
+						);
+					}
+					itemsBuffer.clear();
+				}
 				if(LOG.isTraceEnabled(Markers.MSG)) {
 					LOG.trace(
 						Markers.MSG, "Submitted object #{} of size {}",
@@ -122,6 +136,7 @@ implements Producer<T> {
 				break;
 			}
 		}
+		//
 		LOG.debug(Markers.MSG, "Finished, generated {} items", i);
 	}
 	//

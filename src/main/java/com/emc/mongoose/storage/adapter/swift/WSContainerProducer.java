@@ -4,7 +4,6 @@ import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 // mongoose-core-api.jar
 import com.emc.mongoose.core.api.io.req.MutableWSRequest;
-import com.emc.mongoose.core.api.io.req.conf.WSRequestConfig;
 import com.emc.mongoose.core.api.load.model.Consumer;
 import com.emc.mongoose.core.api.load.model.Producer;
 import com.emc.mongoose.core.api.data.DataObject;
@@ -202,7 +201,7 @@ implements Producer<T> {
 										} else if(count < maxCount) {
 											nextDataItem = dataConstructor
 												.newInstance(lastId, offset, lastSize);
-											consumer.submit(nextDataItem);
+											consumer.feed(nextDataItem);
 											if(LOG.isTraceEnabled(Markers.MSG)) {
 												LOG.trace(
 													Markers.MSG, "Submitted \"{}\" to consumer",
@@ -225,7 +224,7 @@ implements Producer<T> {
 									} catch(final RemoteException e) {
 										LogUtil.exception(
 											LOG, Level.WARN, e,
-											"Failed to submit new data object to the consumer"
+											"Failed to feed new data object to the consumer"
 										);
 									} catch(final NumberFormatException e) {
 										LOG.debug(Markers.ERR, "Invalid id: {}", lastId);

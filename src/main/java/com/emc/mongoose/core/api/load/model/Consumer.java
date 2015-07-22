@@ -13,10 +13,10 @@ import java.util.concurrent.RejectedExecutionException;
 public interface Consumer<T>
 extends Closeable {
 	//
-	void submit(final T item)
+	void feed(final T item)
 	throws RemoteException, InterruptedException, RejectedExecutionException;
 	//
-	void submit(final List<T> items)
+	void feedAll(final List<T> items)
 	throws RemoteException, InterruptedException, RejectedExecutionException;
 	//
 	void shutdown()

@@ -45,13 +45,13 @@ implements ObjectStorage<T> {
 		) {
 			{ setDaemon(true); setName("asyncCreateWorker"); start(); }
 			@Override
-			protected final void submitSync(final T dataItem) {
+			protected final void feedSequentially(final T dataItem) {
 				synchronized(itemIndex) {
 					itemIndex.put(dataItem.getId(), dataItem);
 				}
 			}
 			@Override
-			protected final void submitSync(final List<T> dataItems) {
+			protected final void feedSequentiallyAll(final List<T> dataItems) {
 				final HashMap<String, T> items2insert = new HashMap<>();
 				for(final T dataItem : dataItems) {
 					items2insert.put(dataItem.getId(), dataItem);
@@ -66,14 +66,14 @@ implements ObjectStorage<T> {
 		) {
 			{ setDaemon(true); setName("asyncDeleteWorker"); start(); }
 			@Override
-			protected final void submitSync(final T dataItem)
+			protected final void feedSequentially(final T dataItem)
 			throws InterruptedException, RemoteException {
 				synchronized(itemIndex) {
 					itemIndex.remove(dataItem.getId());
 				}
 			}
 			@Override
-			protected final void submitSync(final List<T> dataItems) {
+			protected final void feedSequentiallyAll(final List<T> dataItems) {
 				synchronized(itemIndex) {
 					for(final T dataItem : dataItems) {
 						itemIndex.remove(dataItem.getId());
@@ -108,7 +108,7 @@ implements ObjectStorage<T> {
 	@Override
 	public void create(final T dataItem) {
 		try {
-			createConsumer.submit(dataItem);
+			createConsumer.feed(dataItem);
 		} catch(final InterruptedException | RejectedExecutionException | RemoteException e) {
 			LogUtil.exception(LOG, Level.WARN, e, "Create submission failure");
 		}
@@ -117,7 +117,7 @@ implements ObjectStorage<T> {
 	@Override
 	public void delete(final T dataItem) {
 		try {
-			deleteConsumer.submit(dataItem);
+			deleteConsumer.feed(dataItem);
 		} catch(final InterruptedException | RejectedExecutionException | RemoteException e) {
 			LogUtil.exception(LOG, Level.WARN, e, "Delete submission failure");
 		}

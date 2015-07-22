@@ -2,6 +2,7 @@ package com.emc.mongoose.core.impl.io.task;
 // mongoose-common
 import com.emc.mongoose.common.collections.InstancePool;
 import com.emc.mongoose.common.collections.Reusable;
+import com.emc.mongoose.common.collections.ReusableList;
 import com.emc.mongoose.common.conf.SizeUtil;
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.common.net.http.content.OutputChannel;
@@ -42,7 +43,6 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -82,7 +82,7 @@ implements WSIOTask<T> {
 	//
 	@SuppressWarnings("unchecked")
 	public static <T extends WSObject> IOTask<T> getInstance(
-		final WSLoadExecutor<T> loadExecutor, T dataItem, final String nodeAddr
+		T dataItem, final WSLoadExecutor<T> loadExecutor, final String nodeAddr
 	) {
 		InstancePool<BasicWSIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
 		if(instPool == null) {
@@ -100,8 +100,9 @@ implements WSIOTask<T> {
 	}
 	//
 	@SuppressWarnings("unchecked")
-	public static <T extends WSObject> List<IOTask<T>> getInstances(
-		final WSLoadExecutor<T> loadExecutor, List<T> dataItems, final String nodeAddr
+	public static <T extends WSObject> void getInstances(
+		final List<IOTask<T>> taskBuff, final List<T> dataItems, final int maxCount,
+		final WSLoadExecutor<T> loadExecutor, final String nodeAddr
 	) {
 		InstancePool<BasicWSIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
 		if(instPool == null) {
@@ -114,12 +115,10 @@ implements WSIOTask<T> {
 				throw new IllegalStateException(e);
 			}
 		}
-		//
-		final List<IOTask<T>> tasks = new ArrayList<>(dataItems.size());
-		for(final WSObject dataItem : dataItems) {
-			tasks.add(instPool.take(dataItem, nodeAddr));
+		// TODO work in bulk mode
+		for(int i = 0; i < maxCount; i ++) {
+			taskBuff.add(instPool.take(dataItems.get(i), nodeAddr));
 		}
-		return tasks;
 	}
 	//
 	@Override
@@ -142,28 +141,57 @@ implements WSIOTask<T> {
 	public final static class BatchFutureCallback
 	implements FutureCallback<List<WSIOTask>>, Reusable<BatchFutureCallback> {
 		//
-		public BatchFutureCallback() {}
+		private final static InstancePool<BatchFutureCallback> BATCH_CALLBACK_POOL;
+		static {
+			try {
+				BATCH_CALLBACK_POOL = new InstancePool<>(
+					BatchFutureCallback.class.getConstructor()
+				);
+			} catch(NoSuchMethodException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		//
+		public static FutureCallback<List<WSIOTask>> getInstance(final ReusableList tasksBuff) {
+			return BATCH_CALLBACK_POOL.take(tasksBuff);
+		}
+		//
+		private ReusableList tasksBuff = null;
 		//
 		@Override
 		public final void completed(final List<WSIOTask> results) {
 			for(final WSIOTask t : results) {
 				t.completed(t);
 			}
+			if(tasksBuff != null) {
+				tasksBuff.release();
+			}
 		}
 		//
 		@Override
 		public final void failed(final Exception e) {
 			LogUtil.exception(LOG, Level.DEBUG, e, "Batch I/O task failure");
+			if(tasksBuff != null) {
+				tasksBuff.release();
+			}
 		}
 		//
 		@Override
 		public final void cancelled() {
 			LOG.debug(Markers.MSG, "Batch I/O task cancellation");
+			if(tasksBuff != null) {
+				tasksBuff.release();
+			}
 		}
 		//
 		@Override
 		public Reusable<BatchFutureCallback> reuse(final Object... args)
 		throws IllegalArgumentException, IllegalStateException {
+			if(args != null) {
+				if(args.length > 0) {
+					tasksBuff = ReusableList.class.cast(args[0]);
+				}
+			}
 			return this;
 		}
 		//
@@ -171,19 +199,6 @@ implements WSIOTask<T> {
 		public void release() {
 			BATCH_CALLBACK_POOL.release(this);
 		}
-	}
-	//
-	private final static InstancePool<BatchFutureCallback> BATCH_CALLBACK_POOL;
-	static {
-		try {
-			BATCH_CALLBACK_POOL = new InstancePool<>(BatchFutureCallback.class.getConstructor());
-		} catch(NoSuchMethodException e) {
-			throw new RuntimeException(e);
-		}
-	}
-	//
-	public static FutureCallback<List<WSIOTask>> getBatchFutureCallback() {
-		return BATCH_CALLBACK_POOL.take();
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	@Override

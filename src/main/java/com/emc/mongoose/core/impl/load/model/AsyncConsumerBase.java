@@ -12,14 +12,16 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 /**
@@ -72,7 +74,7 @@ implements AsyncConsumer<T> {
 	 @throws RejectedExecutionException
 	 */
 	@Override
-	public void submit(final T item)
+	public void feed(final T item)
 	throws RemoteException, InterruptedException, RejectedExecutionException {
 		if(isStarted.get()) {
 			if(item == null || counterPreSubm.get() >= maxCount) {
@@ -90,8 +92,6 @@ implements AsyncConsumer<T> {
 			throw new RejectedExecutionException("Consuming is not started yet");
 		}
 	}
-	//
-	private final Lock bulkInsertLock = new ReentrantLock();
 	/**
 	 May block the executing thread until the queue becomes able to ingest all the items
 	 @param items shouldn't be null!
@@ -100,53 +100,36 @@ implements AsyncConsumer<T> {
 	 @throws RejectedExecutionException if failed to insert at least one item from the specified list
 	 */
 	@Override
-	public void submit(final List<T> items)
+	public void feedAll(final List<T> items)
 	throws RemoteException, InterruptedException, RejectedExecutionException {
-		if(isStarted.get()) {
-			if(items == null || counterPreSubm.get() >= maxCount) {
-				shutdown();
-			}
-			if(isShutdown.get()) {
-				throw new InterruptedException("Shut down already");
-			}
-			if(bulkInsertLock.tryLock(submTimeOutMilliSec, TimeUnit.MILLISECONDS)) {
-				try {
-					final long remaining = maxCount - counterPreSubm.get();
-					final List<T> items2insert;
-					if(remaining < items.size()) {
-						items2insert = items.subList(0, (int) remaining); // cast should be safe here
-					} else {
-						items2insert = items;
-					}
-					while(items2insert.size() < queue.remainingCapacity()) {
-						TimeUnit.MILLISECONDS.sleep(submTimeOutMilliSec);
-					}
-					if(!queue.addAll(items2insert)) {
-						throw new RejectedExecutionException("Failed to perform bulk queue insert");
-					}
-					counterPreSubm.addAndGet(items2insert.size());
-				} finally {
-					bulkInsertLock.unlock();
-				}
-			}
-		} else {
-			throw new RejectedExecutionException("Consuming is not started yet");
+		for(final T item : items) {
+			feed(item);
 		}
 	}
 	/** Consumes the queue */
 	@Override
 	public final void run() {
 		LOG.debug(
-			Markers.MSG, "Determined submit queue capacity of {} for \"{}\"",
+			Markers.MSG, "Determined feeding queue capacity of {} for \"{}\"",
 			queue.remainingCapacity(), getName()
 		);
 		final List<T> itemBuffer = new ArrayList<>(batchSize);
 		try {
 			// finish if queue is empty and the state is "shutdown"
 			while(queue.size() > 0 || !isShutdown.get()) {
-				queue.drainTo(itemBuffer);
+				queue.drainTo(itemBuffer, batchSize);
+				if(LOG.isTraceEnabled(Markers.MSG)) {
+					LOG.trace(
+						Markers.MSG, "Got next {} data items to feed them sequentially",
+						itemBuffer.size()
+					);
+				}
 				if(itemBuffer.size() > 0) {
-					submitSync(itemBuffer);
+					feedSequentiallyAll(itemBuffer);
+					if(LOG.isTraceEnabled(Markers.MSG)) {
+						LOG.trace(Markers.MSG, "Fed {} data items successfully", itemBuffer.size());
+					}
+					itemBuffer.clear();
 				} else {
 					Thread.sleep(submTimeOutMilliSec);
 				}
@@ -164,10 +147,10 @@ implements AsyncConsumer<T> {
 		}
 	}
 	//
-	protected abstract void submitSync(final T item)
+	protected abstract void feedSequentially(final T item)
 	throws InterruptedException, RemoteException;
 	//
-	protected abstract void submitSync(final List<T> item)
+	protected abstract void feedSequentiallyAll(final List<T> item)
 	throws InterruptedException, RemoteException;
 	//
 	@Override
@@ -200,7 +183,7 @@ implements AsyncConsumer<T> {
 		shutdown();
 		final int dropCount = queue.size();
 		if(dropCount > 0) {
-			LOG.debug(Markers.MSG, "Dropped {} submit tasks", dropCount);
+			LOG.debug(Markers.MSG, "Dropped {} data items", dropCount);
 		}
 		queue.clear(); // dispose
 	}

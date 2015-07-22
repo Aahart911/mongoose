@@ -54,7 +54,7 @@ extends LoadExecutorBase<T> {
 	 duration
 	 */
 	@Override
-	public void submit(final T dataItem)
+	public void feed(final T dataItem)
 	throws InterruptedException, RemoteException, RejectedExecutionException {
 		if(rateLimit > 0 && throughPut.getMeanRate() > rateLimit) {
 			final int microDelay = (int) (tgtDur - durTasksSum.get() / throughPut.getCount());
@@ -65,6 +65,6 @@ extends LoadExecutorBase<T> {
 				TimeUnit.MICROSECONDS.sleep(microDelay);
 			}
 		}
-		super.submit(dataItem);
+		super.feed(dataItem);
 	}
 }

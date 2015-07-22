@@ -8,6 +8,8 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
 // mongoose-common.jar
 import com.codahale.metrics.UniformReservoir;
+import com.emc.mongoose.common.collections.ReusableBuffer;
+import com.emc.mongoose.common.collections.ReusableList;
 import com.emc.mongoose.common.conf.Constants;
 import com.emc.mongoose.common.conf.RunTimeConfig;
 import com.emc.mongoose.common.conf.SizeUtil;
@@ -145,7 +147,7 @@ implements LoadExecutor<T> {
 			//
 			@Override
 			public final void run() {
-				IOTask<T> spentIOTask;
+				List<IOTask<T>> spentIOTasks = new ArrayList<>(batchSize);
 				try {
 					while(!isClosed.get()) {
 						// 1st check for done condition
@@ -167,13 +169,13 @@ implements LoadExecutor<T> {
 								);
 							}
 						}
-						// try to get a task for releasing into the pool
-						spentIOTask = ioTaskSpentQueue.poll(
-							RELEASE_TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS
-						);
-						// release the next task if necessary
-						if(spentIOTask != null) {
-							spentIOTask.release();
+						// try to get a tasks for releasing back into the pool
+						ioTaskSpentQueue.drainTo(spentIOTasks, batchSize);
+						if(spentIOTasks.size() > 0) {
+							for(final IOTask<T> spentIOTask : spentIOTasks) {
+								spentIOTask.release();
+							}
+							spentIOTasks.clear();
 						}
 					}
 				} catch(final InterruptedException ignored) {
@@ -322,7 +324,8 @@ implements LoadExecutor<T> {
 		} else if(loadType == IOTask.Type.CREATE) {
 			try {
 				producer = new BasicDataItemGenerator<>(
-					dataCls, maxCount, sizeMin, sizeMax, sizeBias
+					dataCls, maxCount, rtConfig.getBatchSize(),
+					sizeMin, sizeMax, sizeBias
 				);
 				LOG.debug(Markers.MSG, "{} will use new data items producer", getName());
 			} catch(final NoSuchMethodException e) {
@@ -647,11 +650,11 @@ implements LoadExecutor<T> {
 	private final Lock itemsBuffLock = new ReentrantLock();
 	//
 	@Override
-	public void submit(final T dataItem)
+	public void feed(final T dataItem)
 	throws InterruptedException, RemoteException, RejectedExecutionException {
 		try {
 			if(isStarted.get()) {
-				super.submit(dataItem);
+				super.feed(dataItem);
 			} else { // accumulate until started
 				itemsBuffLock.lock();
 				try {
@@ -667,7 +670,7 @@ implements LoadExecutor<T> {
 				} finally {
 					itemsBuffLock.unlock();
 				}
-				itemsBuff.submit(dataItem);
+				itemsBuff.feed(dataItem);
 			}
 		} catch(final RejectedExecutionException e) {
 			counterRej.inc();
@@ -675,12 +678,41 @@ implements LoadExecutor<T> {
 		}
 	}
 	//
+	@Override
+	public void feedAll(final List<T> dataItems)
+	throws InterruptedException, RemoteException, RejectedExecutionException {
+		try {
+			if(isStarted.get()) {
+				super.feedAll(dataItems);
+			} else { // accumulate until started
+				itemsBuffLock.lock();
+				try {
+					if(itemsBuff == null) {
+						itemsBuff = new PersistentAccumulatorProducer<>(
+							dataCls, rtConfig, this.maxCount
+						);
+						itemsBuff.setConsumer(this);
+						LOG.debug(
+							Markers.MSG, "{}: not started yet, consuming into the temporary file"
+						);
+					}
+				} finally {
+					itemsBuffLock.unlock();
+				}
+				itemsBuff.feedAll(dataItems);
+			}
+		} catch(final RejectedExecutionException e) {
+			counterRej.inc(dataItems.size());
+			throw e;
+		}
+	}
+	//
 	@Override @SuppressWarnings("unchecked")
-	protected final void submitSync(final T dataItem)
+	protected final void feedSequentially(final T dataItem)
 	throws InterruptedException, RemoteException {
 		if(counterSubm.getCount() + counterRej.getCount() >= maxCount) {
 			LOG.debug(
-				Markers.MSG, "{}: all tasks has been submitted ({}) or rejected ({})", getName(),
+				Markers.MSG, "{}: all tasks has been consumed ({}) or rejected ({})", getName(),
 				counterSubm.getCount(), counterRej.getCount()
 			);
 			super.interrupt();
@@ -699,7 +731,7 @@ implements LoadExecutor<T> {
 		}
 		//
 		try {
-			if(null == submit(ioTask)) {
+			if(null == submitRequest(ioTask)) {
 				throw new RejectedExecutionException("Null future returned");
 			}
 			counterSubm.inc();
@@ -713,12 +745,14 @@ implements LoadExecutor<T> {
 	}
 	//
 	@Override
-	protected final void submitSync(final List<T> dataItems)
+	protected final void feedSequentiallyAll(final List<T> dataItems)
 	throws InterruptedException, RemoteException {
-		final long countRemain = maxCount - counterSubm.getCount() + counterRej.getCount();
+		final long countRemain = Math.min(
+			dataItems.size(), maxCount - counterSubm.getCount() + counterRej.getCount()
+		);
 		if(countRemain <= 0) {
 			LOG.debug(
-				Markers.MSG, "{}: all tasks has been submitted ({}) or rejected ({})", getName(),
+				Markers.MSG, "{}: all tasks have been consumed ({}) or rejected ({})", getName(),
 				counterSubm.getCount(), counterRej.getCount()
 			);
 			super.interrupt();
@@ -726,10 +760,15 @@ implements LoadExecutor<T> {
 		}
 		// prepare the I/O task instance (make the link between the data item and load type)
 		final String nextNodeAddr = storageNodeCount == 1 ? storageNodeAddrs[0] : getNextNode();
-		final List<IOTask<T>> ioTasks = getIOTasks(
-			countRemain < dataItems.size() ? dataItems.subList(0, (int) countRemain) : dataItems,
-			nextNodeAddr
+		final ReusableList ioTasksBuffer = ReusableBuffer.getInstance(
+			IOTask.class, batchSize
 		);
+		getIOTasks(ioTasksBuffer, dataItems, (int) countRemain, nextNodeAddr);
+		if(LOG.isTraceEnabled(Markers.MSG)) {
+			LOG.trace(
+				Markers.MSG, "Generated {} I/O tasks for the data items", ioTasksBuffer.size()
+			);
+		}
 		// try to sleep while underlying connection pool becomes more free if it's going too fast
 		// warning: w/o such sleep the behaviour becomes very ugly
 		while(counterSubm.getCount() - counterResults.get() >= maxQueueSize) {
@@ -740,11 +779,16 @@ implements LoadExecutor<T> {
 		}
 		//
 		try {
-			if(null == submitAll(ioTasks)) {
+			if(null == submitRequests(ioTasksBuffer)) {
 				throw new RejectedExecutionException("Null future returned");
 			}
-			counterSubm.inc();
-			activeTasksStats.get(nextNodeAddr).incrementAndGet(); // increment node's usage counter
+			counterSubm.inc(countRemain);
+			ioTasksBuffer.clear();
+			if(LOG.isTraceEnabled(Markers.MSG)) {
+				LOG.trace(Markers.MSG, "Consumed next {} I/O tasks", countRemain);
+			}
+			// increment node's usage counter
+			activeTasksStats.get(nextNodeAddr).addAndGet((int) countRemain);
 		} catch(final RejectedExecutionException e) {
 			if(!isInterrupted.get()) {
 				counterRej.inc(countRemain);
@@ -755,12 +799,15 @@ implements LoadExecutor<T> {
 	//
 	@SuppressWarnings("unchecked")
 	protected IOTask<T> getIOTask(final T dataItem, final String nextNodeAddr) {
-		return BasicIOTask.getInstance(this, dataItem, nextNodeAddr);
+		return BasicIOTask.getInstance(dataItem, this, nextNodeAddr);
 	}
 	//
 	@SuppressWarnings("unchecked")
-	protected List<IOTask<T>> getIOTasks(final List<T> dataItems, final String nextNodeAddr) {
-		return BasicIOTask.getInstances(this, dataItems, nextNodeAddr);
+	protected void getIOTasks(
+		final List<IOTask<T>> taskBuff, final List<T> dataItems, final int maxCount,
+		final String nextNodeAddr
+	) {
+		BasicIOTask.getInstances(taskBuff, dataItems, maxCount, this, nextNodeAddr);
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Balancing implementation
@@ -824,7 +871,7 @@ implements LoadExecutor<T> {
 							dataItem, consumer
 						);
 					}
-					consumer.submit(dataItem);
+					consumer.feed(dataItem);
 					if(LOG.isTraceEnabled(Markers.MSG)) {
 						LOG.trace(
 							Markers.MSG, "The data item {} is passed to the consumer {} successfully",
@@ -836,7 +883,7 @@ implements LoadExecutor<T> {
 				LOG.debug(Markers.MSG, "Interrupted");
 			} catch(final RemoteException e) {
 				LogUtil.exception(
-					LOG, Level.WARN, e, "Failed to submit the data item \"{}\" to \"{}\"",
+					LOG, Level.WARN, e, "Failed to feed the data item \"{}\" to \"{}\"",
 					dataItem, consumer
 				);
 			} catch(final RejectedExecutionException e) {

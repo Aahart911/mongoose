@@ -92,7 +92,7 @@ implements AccumulatorProducer<T> {
 	}
 	//
 	@Override
-	protected void submitSync(final T item)
+	protected void feedSequentially(final T item)
 	throws InterruptedException, RemoteException {
 		if(item != null) {
 			try {
@@ -107,7 +107,7 @@ implements AccumulatorProducer<T> {
 	}
 	//
 	@Override
-	protected void submitSync(final List<T> itemBuffer)
+	protected void feedSequentiallyAll(final List<T> itemBuffer)
 	throws InterruptedException, RemoteException {
 		if(itemBuffer != null && itemBuffer.size() > 0) {
 			try {

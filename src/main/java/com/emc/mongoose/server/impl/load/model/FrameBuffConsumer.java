@@ -39,13 +39,13 @@ implements RecordFrameBuffer<T> {
 	}
 	//
 	@Override
-	protected final void submitSync(final T item)
+	protected final void feedSequentially(final T item)
 	throws InterruptedException, RemoteException {
 		buff.get().add(item);
 	}
 	//
 	@Override
-	protected final void submitSync(final List<T> items)
+	protected final void feedSequentiallyAll(final List<T> items)
 	throws InterruptedException, RemoteException {
 		buff.get().addAll(items);
 	}

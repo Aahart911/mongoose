@@ -2,13 +2,11 @@ package com.emc.mongoose.core.impl.load.executor;
 // mongoose-core-api.jar
 import com.emc.mongoose.core.api.io.req.conf.ObjectRequestConfig;
 import com.emc.mongoose.core.api.data.DataObject;
-import com.emc.mongoose.core.api.io.task.DataObjectIOTask;
 import com.emc.mongoose.core.api.io.task.IOTask;
 import com.emc.mongoose.core.api.load.executor.ObjectLoadExecutor;
 // mongoose-common.jar
 import com.emc.mongoose.common.conf.RunTimeConfig;
 // mongoose-core-impl.jar
-import com.emc.mongoose.core.impl.io.task.BasicIOTask;
 import com.emc.mongoose.core.impl.io.task.BasicObjectIOTask;
 //
 import java.io.IOException;
@@ -41,14 +39,15 @@ implements ObjectLoadExecutor<T> {
 	//
 	@Override @SuppressWarnings("unchecked")
 	protected IOTask<T> getIOTask(final T dataItem, final String nextNodeAddr) {
-		return BasicObjectIOTask.getInstance(this, dataItem, nextNodeAddr);
+		return BasicObjectIOTask.getInstance(dataItem, this, nextNodeAddr);
 	}
 	//
 	@Override @SuppressWarnings("unchecked")
-	protected List<IOTask<T>> getIOTasks(
-		final List<T> dataItems, final String nextNodeAddr
+	protected void getIOTasks(
+		final List<IOTask<T>> taskBuff, final List<T> dataItems, final int maxCount,
+		final String nextNodeAddr
 	) {
-		return BasicObjectIOTask.getInstances(this, dataItems, nextNodeAddr);
+		BasicObjectIOTask.getInstances(taskBuff, dataItems, maxCount, this, nextNodeAddr);
 	}
 	//
 	@Override

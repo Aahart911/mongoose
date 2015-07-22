@@ -1,6 +1,5 @@
 package com.emc.mongoose.core.impl.load.executor;
 //
-import com.emc.mongoose.common.conf.Constants;
 // mongoose-common.jar
 import com.emc.mongoose.common.conf.SizeUtil;
 import com.emc.mongoose.common.conf.RunTimeConfig;
@@ -14,9 +13,7 @@ import com.emc.mongoose.core.api.data.UpdatableDataItem;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 //
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.rmi.RemoteException;
+	import java.rmi.RemoteException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 /**
@@ -83,7 +80,7 @@ extends LimitedRateLoadExecutorBase<T> {
 	}
 	// intercepts the data items which should be scheduled for update or append
 	@Override
-	public final void submit(final T dataItem)
+	public final void feed(final T dataItem)
 	throws InterruptedException, RemoteException, RejectedExecutionException {
 		switch(loadType) {
 			case APPEND:
@@ -117,6 +114,6 @@ extends LimitedRateLoadExecutorBase<T> {
 				break;
 		}
 		//
-		super.submit(dataItem);
+		super.feed(dataItem);
 	}
 }

@@ -78,10 +78,10 @@ implements Producer<T> {
 					break;
 				} else {
 					try {
-						consumer.submit(nextItem);
+						consumer.feed(nextItem);
 					} catch(final RemoteException e) {
 						LogUtil.exception(
-							LOG, Level.WARN, e, "Failed to submit remotely the next data item"
+							LOG, Level.WARN, e, "Failed to feed the next data item remotely"
 						);
 					} catch(final RejectedExecutionException e) {
 						LogUtil.exception(

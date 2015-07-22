@@ -1,5 +1,6 @@
 package com.emc.mongoose.core.impl.load.executor;
 // mongoose-common.jar
+import com.emc.mongoose.common.collections.ReusableList;
 import com.emc.mongoose.common.concurrent.GroupThreadFactory;
 import com.emc.mongoose.common.conf.Constants;
 import com.emc.mongoose.common.conf.RunTimeConfig;
@@ -219,7 +220,7 @@ implements WSLoadExecutor<T> {
 	}
 	//
 	@Override
-	public final Future submit(final IOTask<T> ioTask)
+	public final Future submitRequest(final IOTask<T> ioTask)
 	throws RejectedExecutionException {
 		//
 		if(connPool.isShutdown()) {
@@ -243,25 +244,25 @@ implements WSLoadExecutor<T> {
 	}
 	//
 	@Override
-	public final Future submitAll(final List<IOTask<T>> ioTask)
+	public final Future submitRequests(final ReusableList<IOTask<T>> ioTasksBuffer)
 	throws RejectedExecutionException {
 		//
 		if(connPool.isShutdown()) {
 			throw new RejectedExecutionException("Connection pool is shut down");
 		}
 		//
-		final List<WSIOTask<T>> wsTasks = List.class.cast(ioTask);
+		final ReusableList<WSIOTask<T>> wsTasks = ReusableList.class.cast(ioTasksBuffer);
 		final WSIOTask<T> anyTask = wsTasks.get(0);
 		final Future futureResults;
 		try {
 			futureResults = client.executePipelined(
 				anyTask.getTarget(), wsTasks, wsTasks, connPool, anyTask,
-				BasicWSIOTask.getBatchFutureCallback()
+				BasicWSIOTask.BatchFutureCallback.getInstance(ioTasksBuffer)
 			);
 			if(LOG.isTraceEnabled(Markers.MSG)) {
 				LOG.trace(
 					Markers.MSG, "{} I/O tasks have been submitted for execution to {}",
-					anyTask.getTarget()
+					wsTasks.size(), anyTask.getTarget()
 				);
 			}
 		} catch(final Exception e) {
@@ -272,14 +273,15 @@ implements WSLoadExecutor<T> {
 	//
 	@Override @SuppressWarnings("unchecked")
 	protected IOTask<T> getIOTask(final T dataItem, final String nextNodeAddr) {
-		return BasicWSIOTask.getInstance(this, dataItem, nextNodeAddr);
+		return BasicWSIOTask.getInstance(dataItem, this, nextNodeAddr);
 	}
 	//
 	@Override
-	protected List<IOTask<T>> getIOTasks(
-		final List<T> dataItems, final String nextNodeAddr
+	protected void getIOTasks(
+		final List<IOTask<T>> taskBuff, final List<T> dataItems, final int maxCount,
+		final String nextNodeAddr
 	) {
-		return BasicWSIOTask.getInstances(this, dataItems, nextNodeAddr);
+		BasicWSIOTask.getInstances(taskBuff, dataItems, maxCount, this, nextNodeAddr);
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Balancing based on the connection pool stats

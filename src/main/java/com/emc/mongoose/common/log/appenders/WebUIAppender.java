@@ -82,9 +82,7 @@ extends AbstractAppender {
 	public synchronized static void sendPreviousLogs(final WebSocketLogListener listener) {
 		final List<LogEvent> previousLogs = new ArrayList<>();
 		for (final CircularFifoQueue<LogEvent> queue : LOG_EVENTS_MAP.values()) {
-			for (final LogEvent logEvent : queue) {
-				previousLogs.add(logEvent);
-			}
+			previousLogs.addAll(queue);
 		}
 		listener.sendMessage(previousLogs);
 	}

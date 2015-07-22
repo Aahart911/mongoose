@@ -35,7 +35,7 @@ implements Consumer<T> {
 	}
 	//
 	@Override
-	protected void submitSync(final T dataItem)
+	protected void feedSequentially(final T dataItem)
 	throws InterruptedException, RemoteException {
 		try {
 			itemOut.write(dataItem);
@@ -45,7 +45,7 @@ implements Consumer<T> {
 	}
 	//
 	@Override
-	protected void submitSync(final List<T> dataItems) {
+	protected void feedSequentiallyAll(final List<T> dataItems) {
 		try {
 			itemOut.write(dataItems);
 		} catch(final IOException e) {

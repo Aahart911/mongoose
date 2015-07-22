@@ -9,6 +9,10 @@ import com.emc.mongoose.client.impl.load.executor.gauges.MaxLong;
 import com.emc.mongoose.client.impl.load.executor.gauges.MinLong;
 import com.emc.mongoose.client.impl.load.executor.gauges.SumDouble;
 import com.emc.mongoose.client.impl.load.executor.gauges.SumLong;
+import com.emc.mongoose.common.collections.InstancePool;
+import com.emc.mongoose.common.collections.Reusable;
+import com.emc.mongoose.common.collections.ReusableBuffer;
+import com.emc.mongoose.common.collections.ReusableList;
 import com.emc.mongoose.common.concurrent.GroupThreadFactory;
 import com.emc.mongoose.common.conf.RunTimeConfig;
 import com.emc.mongoose.common.log.LogUtil;
@@ -398,7 +402,7 @@ implements LoadClient<T> {
 				} else {
 					try {
 						for(final T nextDataItem : nextDataItemsBuff) {
-							consumer.submit(nextDataItem);
+							consumer.feed(nextDataItem);
 						}
 					} catch(final InterruptedException e) {
 						LOG.debug(Markers.MSG, "Interrupted while feeding the consumer");
@@ -646,7 +650,7 @@ implements LoadClient<T> {
 	private final AtomicInteger rrc = new AtomicInteger(0);
 	//
 	@Override
-	public final void submit(final T dataItem)
+	public final void feed(final T dataItem)
 	throws RejectedExecutionException, InterruptedException {
 		Future remoteSubmFuture = null;
 		String nextLoadSvcAddr;
@@ -668,22 +672,24 @@ implements LoadClient<T> {
 	}
 	//
 	@Override
-	public final void submit(final List<T> dataItemsSrc)
+	public final void feedAll(final List<T> dataItemsSrc)
 	throws RejectedExecutionException, InterruptedException {
 		Future remoteSubmFuture = null;
 		String nextLoadSvcAddr;
-		final List<T> dataItemsDst = new ArrayList<>(dataItemsSrc == null ? 0 : dataItemsSrc.size());
+		final ReusableList<DataItem> dataItemsDst = ReusableBuffer.getInstance(
+			DataItem.class, dataItemsSrc == null ? 0 : dataItemsSrc.size()
+		);
 		Collections.copy(dataItemsDst, dataItemsSrc);
 		for(
 			int tryCount = 0;
 			tryCount < Short.MAX_VALUE && remoteSubmFuture == null && !isShutdown();
 			tryCount ++
-			) {
+		) {
 			try {
 				nextLoadSvcAddr = loadSvcAddrs[(rrc.get() + tryCount) % loadSvcAddrs.length];
 				remoteSubmFuture = submit(
 					RemoteSubmitTask.getInstance(
-						remoteLoadMap.get(nextLoadSvcAddr), dataItemsDst
+						(LoadSvc<DataItem>) remoteLoadMap.get(nextLoadSvcAddr), dataItemsDst
 					)
 				);
 				rrc.incrementAndGet();
@@ -877,19 +883,21 @@ implements LoadClient<T> {
 	}
 	//
 	@Override
-	public final Future submit(final IOTask<T> request)
+	public final Future submitRequest(final IOTask<T> request)
 	throws RemoteException {
 		return remoteLoadMap
 			.get(loadSvcAddrs[(int) (getTaskCount() % loadSvcAddrs.length)])
-			.submit(request);
+			.submitRequest(request);
 	}
 	//
 	@Override
-	public final Future submitAll(final List<IOTask<T>> requests)
-		throws RemoteException {
-		return remoteLoadMap
+	public final Future submitRequests(final ReusableList<IOTask<T>> requests)
+	throws RemoteException {
+		final Future f = remoteLoadMap
 			.get(loadSvcAddrs[(int) (getTaskCount() % loadSvcAddrs.length)])
-			.submitAll(requests);
+			.submitRequests(requests);;
+		requests.release();
+		return f;
 	}
 	//
 	@Override
