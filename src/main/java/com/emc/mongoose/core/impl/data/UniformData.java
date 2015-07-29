@@ -5,8 +5,10 @@ import com.emc.mongoose.common.conf.RunTimeConfig;
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.common.net.ServiceUtils;
 // mongoose-core-api.jar
+import com.emc.mongoose.core.api.data.DataCorruptionException;
 import com.emc.mongoose.core.api.data.DataItem;
 import com.emc.mongoose.core.api.data.DataObject;
+import com.emc.mongoose.core.api.data.DataSizeException;
 import com.emc.mongoose.core.api.data.model.DataSource;
 // mongoose-core-impl.jar
 import com.emc.mongoose.core.impl.data.model.UniformDataSource;
@@ -95,7 +97,7 @@ implements DataItem {
 		ringBuffSize = ringBuff.capacity();
 	}
 	//
-	private void reset() {
+	protected void reset() {
 		ringBuff.limit(ringBuffSize).position((int) (offset % ringBuffSize));
 	}
 	//
@@ -151,7 +153,7 @@ implements DataItem {
 	}
 	//
 	@Override
-	public final int read(final ByteBuffer dst) {
+	public final synchronized int read(final ByteBuffer dst) {
 		enforceCircularity();
 		// bytes count to transfer
 		final int n = Math.min(dst.remaining(), ringBuff.remaining());
@@ -162,9 +164,11 @@ implements DataItem {
 	}
 	//
 	@Override
-	public final int write(final WritableByteChannel chanDst)
+	public final synchronized int write(final WritableByteChannel chanDst, final long maxCount)
 	throws IOException {
 		enforceCircularity();
+		int n = (int) Math.min(maxCount, ringBuff.remaining());
+		ringBuff.limit(ringBuff.position() + n);
 		return chanDst.write(ringBuff);
 	}
 	//
@@ -182,7 +186,7 @@ implements DataItem {
 		int n;
 		setRelativeOffset(relOffset);
 		while(writtenCount < len) {
-			n = write(chanDst);
+			n = write(chanDst, len-writtenCount);
 			if(n < 0) {
 				LOG.warn(Markers.ERR, "Channel returned {} as written byte count", n);
 			} else if(n > 0) {
@@ -194,11 +198,11 @@ implements DataItem {
 	//
 	@Override
 	public final int readAndVerify(final ReadableByteChannel chanSrc, final ByteBuffer buff)
-	throws IOException {
+	throws DataSizeException, DataCorruptionException, IOException {
 		//
 		enforceCircularity();
 		int n = ringBuff.remaining();
-		if(buff.capacity() > n) {
+		if(buff.limit() > n) {
 			buff.limit(n);
 		}
 		//
@@ -223,20 +227,31 @@ implements DataItem {
 	@Override
 	public boolean readAndVerifyFully(final ReadableByteChannel chanSrc)
 	throws IOException {
-		return readAndVerifyRange(chanSrc, 0, size);
+		try {
+			readAndVerifyRange(chanSrc, 0, size);
+			return true;
+		} catch(final DataSizeException e) {
+			LOG.warn(
+				Markers.MSG, "{}: content size mismatch, expected: {}, actual: {}",
+				Long.toString(offset, DataObject.ID_RADIX), size, e.offset
+			);
+			return false;
+		} catch(final DataCorruptionException e) {
+			LOG.warn(
+				Markers.MSG, "{}: content mismatch @ offset {}, expected: {}, actual: {}",
+				Long.toString(offset, DataObject.ID_RADIX), e.offset,
+				String.format("\"0x%X\"", e.expected), String.format("\"0x%X\"", e.actual)
+			);
+			return false;
+		}
 	}
 	// checks that data read from input equals the specified range
 	@Override
-	public final boolean readAndVerifyRange(
+	public final long readAndVerifyRange(
 		final ReadableByteChannel chanSrc, final long relOffset, final long len
-	) throws IOException {
+	) throws DataSizeException, DataCorruptionException, IOException {
 		setRelativeOffset(relOffset);
-		//
-		final ByteBuffer buff = ByteBuffer.allocate(
-			(int) Math.min(
-				Constants.BUFF_SIZE_HI, Math.max(Constants.BUFF_SIZE_LO, len)
-			)
-		);
+		final ByteBuffer buff = ByteBuffer.allocate((int) Math.min(Constants.BUFF_SIZE_HI, len));
 		//
 		int n;
 		long doneByteCount = 0;
@@ -244,26 +259,19 @@ implements DataItem {
 			while(doneByteCount < len) {
 				n = readAndVerify(chanSrc, buff);
 				if(n > 0) {
-					buff.clear();
 					doneByteCount += n;
+					buff.position(0)
+						.limit((int) Math.min(len - doneByteCount, buff.capacity()));
 				}
 			}
 		} catch(final DataSizeException e) {
-			LOG.warn(
-				Markers.MSG, "{}: content size mismatch, expected: {}, actual: {}",
-				Long.toString(offset, DataObject.ID_RADIX), size, relOffset + doneByteCount
-			);
-			return false;
+			e.offset = relOffset + doneByteCount;
+			throw e;
 		} catch(final DataCorruptionException e) {
-			LOG.warn(
-				Markers.MSG, "{}: content mismatch @ offset {}, expected: {}, actual: {}",
-				Long.toString(offset, DataObject.ID_RADIX),
-				relOffset + doneByteCount + e.relOffset,
-				String.format("\"0x%X\"", e.expected), String.format("\"0x%X\"", e.actual)
-			);
-			return false;
+			e.offset += doneByteCount;
+			throw e;
 		}
-		return true;
+		return doneByteCount;
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Human readable "serialization" implementation ///////////////////////////////////////////////

@@ -28,6 +28,7 @@ import com.emc.mongoose.core.api.load.model.LoadState;
 // mongoose-core-impl.jar
 import com.emc.mongoose.core.impl.data.model.CSVFileItemInput;
 import com.emc.mongoose.core.impl.io.task.BasicIOTask;
+import com.emc.mongoose.core.impl.io.task.BasicWSIOTask;
 import com.emc.mongoose.core.impl.load.model.BasicDataItemGenerator;
 import com.emc.mongoose.core.impl.load.model.AsyncConsumerBase;
 import com.emc.mongoose.core.impl.load.model.PersistentAccumulatorProducer;
@@ -59,7 +60,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -76,8 +76,9 @@ extends AsyncConsumerBase<T>
 implements LoadExecutor<T> {
 	//
 	private final static Logger LOG = LogManager.getLogger();
-	private final static int RELEASE_TIMEOUT_MILLISEC = 100;
-	public final static Map<String, List<LoadState>> DESERIALIZED_STATES = new ConcurrentHashMap<>();
+	private final static int RELEASE_TIMEOUT_MILLISEC = 10;
+	//
+	private final static List<String> IMMUTABLE_PARAMS = new ArrayList<>();
 	//
 	protected final int instanceNum, connCountPerNode, storageNodeCount;
 	protected final String storageNodeAddrs[];
@@ -111,7 +112,7 @@ implements LoadExecutor<T> {
 	private ResumableClock resumableClock = new ResumableClock();
 	private AtomicBoolean isLoadFinished = new AtomicBoolean(false);
 	//
-	private static final List<String> IMMUTABLE_PARAMS = new ArrayList<>();
+	private final List<IOTask<T>> ioTaskBuffer;
 	//
 	static {
 		initializeImmutableParams();
@@ -155,7 +156,7 @@ implements LoadExecutor<T> {
 							if(lock.tryLock(RELEASE_TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS)) {
 								try {
 									condProducerDone.signalAll();
-									LOG.debug(
+									LOG.trace(
 										Markers.MSG, "{}: done/interrupted signal emitted",
 										getName()
 									);
@@ -199,10 +200,11 @@ implements LoadExecutor<T> {
 		final long sizeMin, final long sizeMax, final float sizeBias
 	) {
 		super(
-			maxCount, rtConfig.getTasksMaxQueueSize(), rtConfig.getTasksSubmitTimeOutMilliSec(),
-			rtConfig.getBatchSize()
+			maxCount, rtConfig.getLoadLimitTimeUnit().toMillis(rtConfig.getLoadLimitTimeValue()),
+			rtConfig.getTasksMaxQueueSize(), rtConfig.getBatchSize()
 		);
 		//
+		this.ioTaskBuffer = new ArrayList<>(batchSize);
 		this.dataCls = dataCls;
 		this.rtConfig = rtConfig;
 		if (!INSTANCE_NUMBERS.containsKey(rtConfig.getRunId())) {
@@ -760,13 +762,13 @@ implements LoadExecutor<T> {
 		}
 		// prepare the I/O task instance (make the link between the data item and load type)
 		final String nextNodeAddr = storageNodeCount == 1 ? storageNodeAddrs[0] : getNextNode();
-		final ReusableList ioTasksBuffer = ReusableBuffer.getInstance(
+		final ReusableList ioTaskBuffer = ReusableBuffer.getInstance(
 			IOTask.class, batchSize
 		);
-		getIOTasks(ioTasksBuffer, dataItems, (int) countRemain, nextNodeAddr);
+		getIOTasks(ioTaskBuffer, dataItems, (int) countRemain, nextNodeAddr);
 		if(LOG.isTraceEnabled(Markers.MSG)) {
 			LOG.trace(
-				Markers.MSG, "Generated {} I/O tasks for the data items", ioTasksBuffer.size()
+				Markers.MSG, "Generated {} I/O tasks for the data items", ioTaskBuffer.size()
 			);
 		}
 		// try to sleep while underlying connection pool becomes more free if it's going too fast
@@ -779,11 +781,11 @@ implements LoadExecutor<T> {
 		}
 		//
 		try {
-			if(null == submitRequests(ioTasksBuffer)) {
+			// note that the method call below is responsive for task buffer releasing
+			if(null == submitRequests(ioTaskBuffer)) {
 				throw new RejectedExecutionException("Null future returned");
 			}
 			counterSubm.inc(countRemain);
-			ioTasksBuffer.clear();
 			if(LOG.isTraceEnabled(Markers.MSG)) {
 				LOG.trace(Markers.MSG, "Consumed next {} I/O tasks", countRemain);
 			}

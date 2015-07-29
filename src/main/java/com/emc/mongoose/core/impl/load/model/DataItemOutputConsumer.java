@@ -1,6 +1,6 @@
 package com.emc.mongoose.core.impl.load.model;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import static com.emc.mongoose.common.conf.RunTimeConfig.getContext;
 import com.emc.mongoose.common.log.LogUtil;
 //
 import com.emc.mongoose.core.api.data.DataItem;
@@ -27,9 +27,11 @@ implements Consumer<T> {
 	//
 	public DataItemOutputConsumer(final DataItemOutput<T> itemOut) {
 		super(
-			Long.MAX_VALUE, RunTimeConfig.getContext().getTasksMaxQueueSize(),
-			RunTimeConfig.getContext().getTasksSubmitTimeOutMilliSec(),
-			RunTimeConfig.getContext().getBatchSize()
+			Long.MAX_VALUE,
+			getContext().getLoadLimitTimeUnit().toMillis(
+				getContext().getLoadLimitTimeValue()
+			),
+			getContext().getTasksMaxQueueSize(), getContext().getBatchSize()
 		);
 		this.itemOut = itemOut;
 	}

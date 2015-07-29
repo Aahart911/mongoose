@@ -1,6 +1,7 @@
 package com.emc.mongoose.client.impl.load.builder;
 // mongoose-common.jar
 import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.exceptions.DuplicateSvcNameException;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 // mongoose-core-api.jar
@@ -223,7 +224,7 @@ implements LoadBuilderClient<T, U> {
 	}
 	//
 	@Override
-	public final LoadBuilderClient<T, U> setThreadsPerNodeDefault(final short threadCount)
+	public final LoadBuilderClient<T, U> setThreadsPerNodeDefault(final int threadCount)
 	throws IllegalArgumentException, RemoteException {
 		LoadBuilderSvc<T, U> nextBuilder;
 		for(final String addr : keySet()) {
@@ -235,7 +236,7 @@ implements LoadBuilderClient<T, U> {
 	//
 	@Override
 	public final LoadBuilderClient<T, U> setThreadsPerNodeFor(
-		final short threadCount, final IOTask.Type loadType
+		final int threadCount, final IOTask.Type loadType
 	) throws IllegalArgumentException, RemoteException {
 		LoadBuilderSvc<T, U> nextBuilder;
 		for(final String addr : keySet()) {
@@ -284,19 +285,23 @@ implements LoadBuilderClient<T, U> {
 	@Override
 	public final U build()
 	throws RemoteException {
+		U client = null;
 		try {
 			invokePreConditions();
+			client = buildActually();
+		} catch (final DuplicateSvcNameException e) {
+			LogUtil.exception(LOG, Level.ERROR, e, "Possible load service usage collision");
 		} catch(final IllegalStateException e) {
 			LogUtil.exception(LOG, Level.WARN, e, "Preconditions failure");
 		}
-		return buildActually();
+		return client;
 	}
 	//
 	protected abstract void invokePreConditions()
 	throws IllegalStateException;
 	//
 	protected abstract U buildActually()
-	throws RemoteException;
+	throws RemoteException, DuplicateSvcNameException;
 	//
 	@Override
 	public String toString() {

@@ -51,8 +51,8 @@ implements WSObject {
 	}
 	//
 	@Override
-	public final long getContentLength() {
-		if(hasUpdatedRanges()) {
+	public long getContentLength() {
+		if(hasAnyUpdatedRanges()) {
 			return getPendingRangesSize();
 		} else if(isAppending()) {
 			return getPendingAugmentSize();

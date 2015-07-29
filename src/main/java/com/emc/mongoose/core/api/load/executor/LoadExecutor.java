@@ -11,6 +11,7 @@ import com.emc.mongoose.core.api.load.model.LoadState;
 import org.apache.logging.log4j.Marker;
 //
 import java.rmi.RemoteException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
@@ -26,6 +27,7 @@ public interface LoadExecutor<T extends DataItem>
 extends Producer<T>, AsyncConsumer<T> {
 	//
 	Map<String, AtomicInteger> INSTANCE_NUMBERS = new ConcurrentHashMap<>();
+	Map<String, List<LoadState>> DESERIALIZED_STATES = new ConcurrentHashMap<>();
 	//AtomicInteger NEXT_INSTANCE_NUM = new AtomicInteger(0);
 	//
 	int NANOSEC_SCALEDOWN = 1000, MIB = 0x100000;
@@ -59,7 +61,7 @@ extends Producer<T>, AsyncConsumer<T> {
 	//
 	Future submitRequest(final IOTask<T> request)
 	throws RemoteException, RejectedExecutionException;
-	//
+	/** Note that the method call is responsive for tasks list releasing */
 	Future submitRequests(final ReusableList<IOTask<T>> request)
 	throws RemoteException, RejectedExecutionException;
 	//

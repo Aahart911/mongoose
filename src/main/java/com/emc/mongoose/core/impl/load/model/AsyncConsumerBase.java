@@ -33,8 +33,8 @@ implements AsyncConsumer<T> {
 	//
 	private final static Logger LOG = LogManager.getLogger();
 	// configuration params
-	private final long maxCount;
-	protected final int submTimeOutMilliSec, maxQueueSize, batchSize;
+	private final long maxCount, submTimeOutMilliSec;
+	protected final int maxQueueSize, batchSize;
 	// states
 	private final AtomicLong counterPreSubm = new AtomicLong(0);
 	protected final AtomicBoolean
@@ -45,13 +45,17 @@ implements AsyncConsumer<T> {
 	private final BlockingQueue<T> queue;
 	//
 	public AsyncConsumerBase(
-		final long maxCount, final int maxQueueSize, final int submTimeOutMilliSec,
-		final int batchSize
+		final long maxCount, final long submTimeOutMilliSec,
+		final int maxQueueSize, final int batchSize
 	) {
 		this.maxCount = maxCount > 0 ? maxCount : Long.MAX_VALUE;
-		this.maxQueueSize = (int) Math.min(this.maxCount, maxQueueSize);
-		this.submTimeOutMilliSec = submTimeOutMilliSec;
 		this.batchSize = batchSize;
+		this.submTimeOutMilliSec = submTimeOutMilliSec > 0 ? submTimeOutMilliSec : Long.MAX_VALUE;
+		if(maxQueueSize > 0) {
+			this.maxQueueSize = (int) Math.min(this.maxCount, maxQueueSize);
+		} else {
+			throw new IllegalArgumentException("Invalid max queue size: " + maxQueueSize);
+		}
 		queue = new ArrayBlockingQueue<>(maxQueueSize);
 	}
 	//
@@ -131,7 +135,7 @@ implements AsyncConsumer<T> {
 					}
 					itemBuffer.clear();
 				} else {
-					Thread.sleep(submTimeOutMilliSec);
+					Thread.sleep(10);
 				}
 			}
 			LOG.debug(Markers.MSG, "{}: consuming finished", getName());

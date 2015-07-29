@@ -570,7 +570,7 @@ implements LoadClient<T> {
 	@Override
 	public final void interrupt() {
 		if(!isShutdown()) {
-			LogUtil.trace(LOG, Level.DEBUG, Markers.MSG, "Interrupting {}", name);
+			LOG.debug(Markers.MSG, "Interrupting {}", name);
 			shutdown();
 		}
 		//
@@ -895,7 +895,7 @@ implements LoadClient<T> {
 	throws RemoteException {
 		final Future f = remoteLoadMap
 			.get(loadSvcAddrs[(int) (getTaskCount() % loadSvcAddrs.length)])
-			.submitRequests(requests);;
+			.submitRequests(requests);
 		requests.release();
 		return f;
 	}

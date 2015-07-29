@@ -49,7 +49,7 @@ extends CSVItemInput<T> {
 			)
 		) {
 			final List<T> firstItemsBatch = new ArrayList<>(batchSize);
-			final int n = tmpIn.read(firstItemsBatch);
+			final int n = tmpIn.read(firstItemsBatch, batchSize);
 			if(n > 0) {
 				long sizeSum = 0;
 				for(int i = 0; i < n; i++) {

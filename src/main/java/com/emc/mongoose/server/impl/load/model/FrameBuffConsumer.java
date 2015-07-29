@@ -29,10 +29,12 @@ implements RecordFrameBuffer<T> {
 		new CircularFifoQueue<T>(BUFF_SIZE)
 	);
 	//
-	public FrameBuffConsumer(final RunTimeConfig runTimeConfig, final long maxCount) {
+	public FrameBuffConsumer(
+		final Class<T> dataCls, final RunTimeConfig rtConfig, final long maxCount
+	) {
 		super(
-			maxCount, runTimeConfig.getTasksMaxQueueSize(),
-			runTimeConfig.getTasksSubmitTimeOutMilliSec(), runTimeConfig.getBatchSize()
+			maxCount, rtConfig.getLoadLimitTimeUnit().toMillis(rtConfig.getLoadLimitTimeValue()),
+			rtConfig.getTasksMaxQueueSize(), rtConfig.getBatchSize()
 		);
 		setName(Thread.currentThread().getName() + "-" + getClass().getSimpleName());
 		start();

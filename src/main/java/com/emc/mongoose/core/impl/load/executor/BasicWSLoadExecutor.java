@@ -242,7 +242,7 @@ implements WSLoadExecutor<T> {
 		}
 		return futureResult;
 	}
-	//
+	// note that the method call below is responsive for task buffer releasing
 	@Override
 	public final Future submitRequests(final ReusableList<IOTask<T>> ioTasksBuffer)
 	throws RejectedExecutionException {
@@ -255,6 +255,7 @@ implements WSLoadExecutor<T> {
 		final WSIOTask<T> anyTask = wsTasks.get(0);
 		final Future futureResults;
 		try {
+			// BatchFutureCallback releases the tasks list
 			futureResults = client.executePipelined(
 				anyTask.getTarget(), wsTasks, wsTasks, connPool, anyTask,
 				BasicWSIOTask.BatchFutureCallback.getInstance(ioTasksBuffer)

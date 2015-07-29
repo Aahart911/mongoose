@@ -8,7 +8,7 @@ import com.emc.mongoose.core.api.data.DataItem;
 //
 import com.emc.mongoose.core.impl.data.model.CSVFileItemInput;
 import com.emc.mongoose.storage.mock.api.IOStats;
-import com.emc.mongoose.storage.mock.api.Storage;
+import com.emc.mongoose.storage.mock.api.StorageMock;
 //
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -23,7 +23,7 @@ import java.nio.file.Paths;
  Created by kurila on 03.07.15.
  */
 public abstract class StorageMockBase<T extends DataItem>
-implements Storage<T> {
+implements StorageMock<T> {
 	//
 	private final static Logger LOG = LogManager.getLogger();
 	//
@@ -81,21 +81,21 @@ implements Storage<T> {
 		final Path dataFilePath = Paths.get(rtConfig.getDataSrcFPath());
 		//final int dataSizeRadix = rtConfig.getDataRadixSize();
 		if(null != dataFilePath && !Files.isDirectory(dataFilePath) && Files.exists(dataFilePath)) {
-			T nextItem;
 			long count = 0;
 			try(
 				final CSVFileItemInput<T>
 					csvFileItemInput = new CSVFileItemInput<>(dataFilePath, itemCls)
 			) {
-				do {
-					nextItem = csvFileItemInput.read();
+				T nextItem = csvFileItemInput.read();
+				while (null != nextItem) {
 					// if mongoose is v0.5.0
 					//if(dataSizeRadix == 0x10) {
 					//	nextItem.setSize(Long.valueOf(String.valueOf(nextItem.getSize()), 0x10));
 					//}
 					create(nextItem);
 					count ++;
-				} while(null != nextItem);
+					nextItem = csvFileItemInput.read();
+				}
 			} catch(final EOFException e) {
 				LOG.debug(Markers.MSG, "Loaded {} data items from file {}", count, dataFilePath);
 			} catch(final IOException | NoSuchMethodException e) {
