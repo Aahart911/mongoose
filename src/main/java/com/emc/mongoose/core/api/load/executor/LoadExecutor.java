@@ -59,10 +59,10 @@ extends Producer<T>, AsyncConsumer<T> {
 	RequestConfig<T> getRequestConfig()
 	throws RemoteException;
 	//
-	Future submitRequest(final IOTask<T> request)
+	Future<IOTask<T>> submitRequest(final IOTask<T> request)
 	throws RemoteException, RejectedExecutionException;
-	/** Note that the method call is responsive for tasks list releasing */
-	Future submitRequests(final ReusableList<IOTask<T>> request)
+	//
+	Future<List<IOTask<T>>> submitRequests(final ReusableList<IOTask<T>> request)
 	throws RemoteException, RejectedExecutionException;
 	//
 	void handleResult(final IOTask<T> task)

@@ -5,6 +5,7 @@ import com.emc.mongoose.common.concurrent.GroupThreadFactory;
 import com.emc.mongoose.common.conf.Constants;
 import com.emc.mongoose.common.conf.RunTimeConfig;
 import com.emc.mongoose.common.log.Markers;
+import com.emc.mongoose.common.net.http.request.CustomizedApacheHttpAsyncRequester;
 import com.emc.mongoose.common.net.http.request.SharedHeadersAdder;
 import com.emc.mongoose.common.net.http.request.HostHeaderSetter;
 import com.emc.mongoose.common.log.LogUtil;
@@ -21,6 +22,8 @@ import com.emc.mongoose.core.impl.load.tasks.HttpClientRunTask;
 //
 import org.apache.http.ExceptionLogger;
 import org.apache.http.HttpHost;
+import org.apache.http.concurrent.BasicFuture;
+import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.config.ConnectionConfig;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.http.message.HeaderGroup;
@@ -40,7 +43,6 @@ import org.apache.http.nio.NHttpClientConnection;
 import org.apache.http.nio.NHttpClientEventHandler;
 import org.apache.http.nio.pool.NIOConnFactory;
 import org.apache.http.nio.protocol.HttpAsyncRequestExecutor;
-import org.apache.http.nio.protocol.HttpAsyncRequester;
 import org.apache.http.nio.reactor.ConnectingIOReactor;
 import org.apache.http.nio.reactor.IOEventDispatch;
 import org.apache.http.nio.reactor.IOReactorException;
@@ -65,7 +67,7 @@ implements WSLoadExecutor<T> {
 	//
 	@SuppressWarnings("FieldCanBeLocal")
 	private final HttpProcessor httpProcessor;
-	private final HttpAsyncRequester client;
+	private final CustomizedApacheHttpAsyncRequester client;
 	private final ConnectingIOReactor ioReactor;
 	private final BasicNIOConnPool connPool;
 	private final Thread clientDaemon;
@@ -98,7 +100,7 @@ implements WSLoadExecutor<T> {
 			//.add(new RequestExpectContinue(true))
 			.add(new RequestContent(false))
 			.build();
-		client = new HttpAsyncRequester(
+		client = new CustomizedApacheHttpAsyncRequester(
 			httpProcessor, DefaultConnectionReuseStrategy.INSTANCE,
 			new ExceptionLogger() {
 				@Override
@@ -219,8 +221,8 @@ implements WSLoadExecutor<T> {
 		}
 	}
 	//
-	@Override
-	public final Future submitRequest(final IOTask<T> ioTask)
+	@Override @SuppressWarnings("unchecked")
+	public final Future<IOTask<T>> submitRequest(final IOTask<T> ioTask)
 	throws RejectedExecutionException {
 		//
 		if(connPool.isShutdown()) {
@@ -228,9 +230,14 @@ implements WSLoadExecutor<T> {
 		}
 		//
 		final WSIOTask<T> wsTask = (WSIOTask<T>) ioTask;
-		final Future futureResult;
+		final BasicFuture<WSIOTask<T>> futureResult = new BasicFuture<>(this);
 		try {
-			futureResult = client.execute(wsTask, wsTask, connPool, wsTask, wsTask);
+			connPool.lease(
+				wsTask.getTarget(), null,
+				client.getConnRequestCallback(
+					futureResult, wsTask, wsTask, connPool, wsTask
+				)
+			);
 			if(LOG.isTraceEnabled(Markers.MSG)) {
 				LOG.trace(
 					Markers.MSG, "I/O task #{} has been submitted for execution: {}",
@@ -240,25 +247,47 @@ implements WSLoadExecutor<T> {
 		} catch(final Exception e) {
 			throw new RejectedExecutionException(e);
 		}
-		return futureResult;
+		return (Future) futureResult;
 	}
 	// note that the method call below is responsive for task buffer releasing
 	@Override
-	public final Future submitRequests(final ReusableList<IOTask<T>> ioTasksBuffer)
-	throws RejectedExecutionException {
+	public final Future<List<IOTask<T>>> submitRequests(
+		final ReusableList<IOTask<T>> ioTasksBuffer
+	) throws RejectedExecutionException {
 		//
 		if(connPool.isShutdown()) {
 			throw new RejectedExecutionException("Connection pool is shut down");
 		}
 		//
-		final ReusableList<WSIOTask<T>> wsTasks = ReusableList.class.cast(ioTasksBuffer);
+		final ReusableList<WSIOTask<T>> wsTasks = (ReusableList) ioTasksBuffer;
 		final WSIOTask<T> anyTask = wsTasks.get(0);
-		final Future futureResults;
+		final BasicFuture<List<WSIOTask<T>>> futureResults = new BasicFuture<>(
+			new FutureCallback<List<WSIOTask<T>>>() {
+				@Override
+				public final void completed(final List<WSIOTask<T>> results) {
+					for(final WSIOTask<T> t : results) {
+						BasicWSLoadExecutor.this.completed(t);
+					}
+					ioTasksBuffer.release();
+				}
+				@Override
+				public final void failed(final Exception e) {
+					LogUtil.exception(LOG, Level.DEBUG, e, "Batch I/O task failure");
+					ioTasksBuffer.release();
+				}
+				@Override
+				public final void cancelled() {
+					LOG.debug(Markers.MSG, "Batch I/O task cancellation");
+					ioTasksBuffer.release();
+				}
+			}
+		);
 		try {
-			// BatchFutureCallback releases the tasks list
-			futureResults = client.executePipelined(
-				anyTask.getTarget(), wsTasks, wsTasks, connPool, anyTask,
-				BasicWSIOTask.BatchFutureCallback.getInstance(ioTasksBuffer)
+			connPool.lease(
+				anyTask.getTarget(), null,
+				client.getConnPipelinedRequestCallback(
+					futureResults, wsTasks, wsTasks, connPool, anyTask
+				)
 			);
 			if(LOG.isTraceEnabled(Markers.MSG)) {
 				LOG.trace(
@@ -269,7 +298,7 @@ implements WSLoadExecutor<T> {
 		} catch(final Exception e) {
 			throw new RejectedExecutionException(e);
 		}
-		return futureResults;
+		return (Future) futureResults;
 	}
 	//
 	@Override @SuppressWarnings("unchecked")
@@ -283,6 +312,23 @@ implements WSLoadExecutor<T> {
 		final String nextNodeAddr
 	) {
 		BasicWSIOTask.getInstances(taskBuff, dataItems, maxCount, this, nextNodeAddr);
+	}
+	//
+	@Override
+	public void completed(final WSIOTask<T> ioTask) {
+		ioTask.complete();
+	}
+	//
+	@Override
+	public void failed(final Exception e) {
+		if(!reqConfigCopy.isClosed()) {
+			LogUtil.exception(LOG, Level.DEBUG, e, "{}: I/O task failure", hashCode());
+		}
+	}
+	//
+	@Override
+	public void cancelled() {
+		LOG.debug(Markers.MSG, "{}: I/O task canceled", hashCode());
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Balancing based on the connection pool stats

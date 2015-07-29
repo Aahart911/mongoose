@@ -2,7 +2,6 @@ package com.emc.mongoose.core.api.io.task;
 //
 import com.emc.mongoose.core.api.data.WSObject;
 //
-import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.protocol.HttpContext;
 //
 import org.apache.http.nio.protocol.HttpAsyncRequestProducer;
@@ -16,9 +15,8 @@ public interface
 extends
 	DataObjectIOTask<T>,
 	HttpAsyncRequestProducer,
-	HttpAsyncResponseConsumer<WSIOTask>,
-	HttpContext,
-	FutureCallback {
+	HttpAsyncResponseConsumer<WSIOTask<T>>,
+	HttpContext {
 	//
 	@Override
 	WSIOTask<T> setDataItem(final T dataItem);

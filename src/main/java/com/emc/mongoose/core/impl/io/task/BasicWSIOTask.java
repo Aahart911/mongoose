@@ -1,8 +1,6 @@
 package com.emc.mongoose.core.impl.io.task;
 // mongoose-common
 import com.emc.mongoose.common.collections.InstancePool;
-import com.emc.mongoose.common.collections.Reusable;
-import com.emc.mongoose.common.collections.ReusableList;
 import com.emc.mongoose.common.conf.SizeUtil;
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.common.net.http.content.OutputChannel;
@@ -26,7 +24,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.RequestLine;
 import org.apache.http.StatusLine;
-import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.message.HeaderGroup;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HTTP;
@@ -135,69 +132,6 @@ implements WSIOTask<T> {
 				);
 			}
 			instPool.release(this);
-		}
-	}
-	////////////////////////////////////////////////////////////////////////////////////////////////
-	public final static class BatchFutureCallback
-	implements FutureCallback<List<WSIOTask>>, Reusable<BatchFutureCallback> {
-		//
-		private final static InstancePool<BatchFutureCallback> BATCH_CALLBACK_POOL;
-		static {
-			try {
-				BATCH_CALLBACK_POOL = new InstancePool<>(
-					BatchFutureCallback.class.getConstructor()
-				);
-			} catch(NoSuchMethodException e) {
-				throw new RuntimeException(e);
-			}
-		}
-		//
-		public static FutureCallback<List<WSIOTask>> getInstance(final ReusableList tasksBuff) {
-			return BATCH_CALLBACK_POOL.take(tasksBuff);
-		}
-		//
-		private ReusableList tasksBuff = null;
-		//
-		@Override
-		public final void completed(final List<WSIOTask> results) {
-			for(final WSIOTask t : results) {
-				t.completed(t);
-			}
-			if(tasksBuff != null) {
-				tasksBuff.release();
-			}
-		}
-		//
-		@Override
-		public final void failed(final Exception e) {
-			LogUtil.exception(LOG, Level.DEBUG, e, "Batch I/O task failure");
-			if(tasksBuff != null) {
-				tasksBuff.release();
-			}
-		}
-		//
-		@Override
-		public final void cancelled() {
-			LOG.debug(Markers.MSG, "Batch I/O task cancellation");
-			if(tasksBuff != null) {
-				tasksBuff.release();
-			}
-		}
-		//
-		@Override
-		public Reusable<BatchFutureCallback> reuse(final Object... args)
-		throws IllegalArgumentException, IllegalStateException {
-			if(args != null) {
-				if(args.length > 0) {
-					tasksBuff = ReusableList.class.cast(args[0]);
-				}
-			}
-			return this;
-		}
-		//
-		@Override
-		public void release() {
-			BATCH_CALLBACK_POOL.release(this);
 		}
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////
@@ -584,33 +518,16 @@ implements WSIOTask<T> {
 	public final Object removeAttribute(final String s) {
 		return wrappedHttpCtx.removeAttribute(s);
 	}
-	////////////////////////////////////////////////////////////////////////////////////////////////
-	// FutureCallback<IOTask.Status> implementation ////////////////////////////////////////////////
-	////////////////////////////////////////////////////////////////////////////////////////////////
-	@Override
-	public final void completed(final Object o) {
-		complete();
-	}
 	/**
-	 Overrides HttpAsyncRequestProducer.failed(Exception),
-	 HttpAsyncResponseConsumer&lt;IOTask.Status&gt;.failed(Exception) and
-	 FutureCallback&lt;IOTask.Status&gt;.failed(Exception)
-	 @param e
+	 Overrides HttpAsyncRequestProducer.failed(Exception) and
+	 HttpAsyncResponseConsumer&lt;IOTask.Status&gt;.failed(Exception)
+	 @param e exception
 	 */
 	@Override
 	public final void failed(final Exception e) {
-		if(!wsReqConf.isClosed()) {
-			LogUtil.exception(LOG, Level.DEBUG, e, "{}: I/O task failure", hashCode());
-		}
+		LogUtil.exception(LOG, Level.WARN, e, "{}: I/O task failure", hashCode());
 		exception = e;
 		status = Status.FAIL_UNKNOWN;
-		complete();
-	}
-	//
-	@Override
-	public final void cancelled() {
-		LOG.debug(Markers.MSG, "{}: I/O task canceled", hashCode());
-		status = Status.CANCELLED;
 		complete();
 	}
 }
