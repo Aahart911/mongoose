@@ -8,8 +8,6 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
 // mongoose-common.jar
 import com.codahale.metrics.UniformReservoir;
-import com.emc.mongoose.common.collections.ReusableBuffer;
-import com.emc.mongoose.common.collections.ReusableList;
 import com.emc.mongoose.common.conf.Constants;
 import com.emc.mongoose.common.conf.RunTimeConfig;
 import com.emc.mongoose.common.conf.SizeUtil;
@@ -514,10 +512,10 @@ implements LoadExecutor<T> {
 			}
 		}
 		//
-		applyParams();
+		applyState();
 	}
 	//
-	private void applyParams() {
+	private void applyState() {
 		final List<LoadState> loadStates = DESERIALIZED_STATES.get(rtConfig.getRunId());
 		//  apply parameters from loadState to current load executor
 		for (final LoadState state : loadStates) {
@@ -748,7 +746,7 @@ implements LoadExecutor<T> {
 	@Override
 	protected final void feedSequentiallyAll(final List<T> dataItems)
 	throws InterruptedException, RemoteException {
-		final long countRemain = Math.min(
+		long countRemain = Math.min(
 			dataItems.size(), maxCount - counterSubm.getCount() + counterRej.getCount()
 		);
 		if(countRemain <= 0) {
@@ -761,9 +759,8 @@ implements LoadExecutor<T> {
 		}
 		// prepare the I/O task instance (make the link between the data item and load type)
 		final String nextNodeAddr = storageNodeCount == 1 ? storageNodeAddrs[0] : getNextNode();
-		final ReusableList ioTaskBuffer = ReusableBuffer.getInstance(
-			IOTask.class, batchSize
-		);
+		// TODO reuse the tasks buffers somehow
+		final List<IOTask<T>> ioTaskBuffer = new ArrayList<>(batchSize);
 		getIOTasks(ioTaskBuffer, dataItems, (int) countRemain, nextNodeAddr);
 		if(LOG.isTraceEnabled(Markers.MSG)) {
 			LOG.trace(
@@ -800,7 +797,7 @@ implements LoadExecutor<T> {
 	//
 	@SuppressWarnings("unchecked")
 	protected IOTask<T> getIOTask(final T dataItem, final String nextNodeAddr) {
-		return BasicIOTask.getInstance(dataItem, this, nextNodeAddr);
+		return BasicIOTask.getInstance(dataItem, reqConfigCopy, nextNodeAddr);
 	}
 	//
 	@SuppressWarnings("unchecked")
@@ -808,7 +805,7 @@ implements LoadExecutor<T> {
 		final List<IOTask<T>> taskBuff, final List<T> dataItems, final int maxCount,
 		final String nextNodeAddr
 	) {
-		BasicIOTask.getInstances(taskBuff, dataItems, maxCount, this, nextNodeAddr);
+		BasicIOTask.getInstances(taskBuff, dataItems, maxCount, reqConfigCopy, nextNodeAddr);
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Balancing implementation
@@ -834,9 +831,7 @@ implements LoadExecutor<T> {
 		return bestNode;
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	@Override
-	public final void handleResult(final IOTask<T> ioTask)
-	throws RemoteException {
+	protected final void handleResult(final IOTask<T> ioTask) {
 		// producing was interrupted?
 		if(isInterrupted.get()) {
 			return;
@@ -978,7 +973,6 @@ implements LoadExecutor<T> {
 			} finally {
 				releaseDaemon.interrupt();
 				ioTaskSpentQueue.clear();
-				BasicIOTask.INSTANCE_POOL_MAP.put(this, null); // dispose I/O tasks pool
 				if(jmxReporter != null) {
 					jmxReporter.close();
 				}
@@ -988,6 +982,10 @@ implements LoadExecutor<T> {
 					if (DESERIALIZED_STATES.containsKey(rtConfig.getRunId())) {
 						DESERIALIZED_STATES.get(rtConfig.getRunId()).remove(currState);
 					}
+				}
+				// dispose the I/O tasks pool
+				if(BasicIOTask.INSTANCE_POOL_MAP.containsKey(reqConfigCopy)) {
+					BasicIOTask.INSTANCE_POOL_MAP.put(reqConfigCopy, null);
 				}
 				LOG.debug(Markers.MSG, "\"{}\" closed successfully", getName());
 			}

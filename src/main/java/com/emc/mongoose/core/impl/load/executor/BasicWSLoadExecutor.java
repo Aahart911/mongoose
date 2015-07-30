@@ -1,6 +1,5 @@
 package com.emc.mongoose.core.impl.load.executor;
 // mongoose-common.jar
-import com.emc.mongoose.common.collections.ReusableList;
 import com.emc.mongoose.common.concurrent.GroupThreadFactory;
 import com.emc.mongoose.common.conf.Constants;
 import com.emc.mongoose.common.conf.RunTimeConfig;
@@ -71,7 +70,7 @@ implements WSLoadExecutor<T> {
 	private final ConnectingIOReactor ioReactor;
 	private final BasicNIOConnPool connPool;
 	private final Thread clientDaemon;
-	private final WSRequestConfig<T> wsReqConfigCopy;
+	private final WSRequestConfig<T> wsReqConfCopy;
 	//
 	@SuppressWarnings("unchecked")
 	public BasicWSLoadExecutor(
@@ -85,10 +84,10 @@ implements WSLoadExecutor<T> {
 			runTimeConfig, reqConfig, addrs, connCountPerNode, listFile, maxCount,
 			sizeMin, sizeMax, sizeBias, rateLimit, countUpdPerReq
 		);
-		wsReqConfigCopy = (WSRequestConfig<T>) reqConfigCopy;
+		wsReqConfCopy = (WSRequestConfig<T>) reqConfigCopy;
 		//
 		final int totalConnCount = connCountPerNode * storageNodeCount;
-		final HeaderGroup sharedHeaders = wsReqConfigCopy.getSharedHeaders();
+		final HeaderGroup sharedHeaders = wsReqConfCopy.getSharedHeaders();
 		final String userAgent = runTimeConfig.getRunName() + "/" + runTimeConfig.getRunVersion();
 		//
 		httpProcessor = HttpProcessorBuilder
@@ -111,7 +110,7 @@ implements WSLoadExecutor<T> {
 		);
 		//
 		final RunTimeConfig thrLocalConfig = RunTimeConfig.getContext();
-		final int buffSize = wsReqConfigCopy.getBuffSize();
+		final int buffSize = wsReqConfCopy.getBuffSize();
 		final long timeOutMs = runTimeConfig.getLoadLimitTimeUnit().toMillis(
 			runTimeConfig.getLoadLimitTimeValue()
 		);
@@ -188,38 +187,57 @@ implements WSLoadExecutor<T> {
 		} catch(final IOException e) {
 			LogUtil.exception(LOG, Level.WARN, e, "Closing failure");
 		} finally {
-			try {
-				clientDaemon.interrupt();
-				LOG.debug(
-					Markers.MSG, "Web storage client daemon \"{}\" interrupted", clientDaemon
-				);
-				if(connPool != null) {
-					connPool.closeExpired();
-					LOG.debug(Markers.MSG, "Closed expired (if any) connections in the pool");
+			clientDaemon.interrupt();
+			LOG.debug(
+				Markers.MSG, "Web storage client daemon \"{}\" interrupted", clientDaemon
+			);
+			if(connPool != null) {
+				connPool.closeExpired();
+				LOG.debug(Markers.MSG, "Closed expired (if any) connections in the pool");
+				try {
+					connPool.closeIdle(1, TimeUnit.MILLISECONDS);
+					LOG.debug(Markers.MSG, "Closed idle connections (if any) in the pool");
+				} finally {
 					try {
-						connPool.closeIdle(1, TimeUnit.MILLISECONDS);
-						LOG.debug(Markers.MSG, "Closed idle connections (if any) in the pool");
-					} finally {
-						try {
-							connPool.shutdown(1);
-							LOG.debug(Markers.MSG, "Connection pool has been shut down");
-						} catch(final IOException e) {
-							LogUtil.exception(
-								LOG, Level.WARN, e, "Connection pool shutdown failure"
-							);
-						}
+						connPool.shutdown(1);
+						LOG.debug(Markers.MSG, "Connection pool has been shut down");
+					} catch(final IOException e) {
+						LogUtil.exception(
+							LOG, Level.WARN, e, "Connection pool shutdown failure"
+						);
 					}
 				}
-				//
-				ioReactor.shutdown(1);
-				LOG.debug(Markers.MSG, "I/O reactor has been shut down");
-			} catch(final IOException e) {
-				LogUtil.exception(LOG, Level.WARN, e, "I/O reactor shutdown failure");
-			} finally {
-				BasicWSIOTask.INSTANCE_POOL_MAP.put(this, null); // dispose the I/O tasks pool
+			}
+			//
+			ioReactor.shutdown(1);
+			LOG.debug(Markers.MSG, "I/O reactor has been shut down");
+			// dispose the I/O tasks pool
+			if(BasicWSIOTask.INSTANCE_POOL_MAP.containsKey(wsReqConfCopy)) {
+				BasicWSIOTask.INSTANCE_POOL_MAP.put(wsReqConfCopy, null);
 			}
 		}
 	}
+	//
+	private final FutureCallback<WSIOTask<T>> taskCallback = new FutureCallback<WSIOTask<T>>() {
+		//
+		@Override
+		public final void completed(final WSIOTask<T> task) {
+			task.complete();
+			handleResult(task);
+		}
+		//
+		@Override
+		public final void failed(final Exception e) {
+			if(!reqConfigCopy.isClosed()) {
+				LogUtil.exception(LOG, Level.DEBUG, e, "{}: I/O task failure", hashCode());
+			}
+		}
+		//
+		@Override
+		public final void cancelled() {
+			LOG.debug(Markers.MSG, "{}: I/O task canceled", hashCode());
+		}
+	};
 	//
 	@Override @SuppressWarnings("unchecked")
 	public final Future<IOTask<T>> submitRequest(final IOTask<T> ioTask)
@@ -230,7 +248,7 @@ implements WSLoadExecutor<T> {
 		}
 		//
 		final WSIOTask<T> wsTask = (WSIOTask<T>) ioTask;
-		final BasicFuture<WSIOTask<T>> futureResult = new BasicFuture<>(this);
+		final BasicFuture<WSIOTask<T>> futureResult = new BasicFuture<>(taskCallback);
 		try {
 			connPool.lease(
 				wsTask.getTarget(), null,
@@ -249,39 +267,40 @@ implements WSLoadExecutor<T> {
 		}
 		return (Future) futureResult;
 	}
-	// note that the method call below is responsive for task buffer releasing
+	//
+	private final FutureCallback<List<WSIOTask<T>>> tasksCallback = new FutureCallback<List<WSIOTask<T>>>() {
+		//
+		@Override
+		public final void completed(final List<WSIOTask<T>> tasks) {
+			for(final WSIOTask<T> task : tasks) {
+				taskCallback.completed(task);
+			}
+		}
+		//
+		@Override
+		public final void failed(final Exception e) {
+			if(!reqConfigCopy.isClosed()) {
+				LogUtil.exception(LOG, Level.DEBUG, e, "{}: batch I/O tasks failure", hashCode());
+			}
+		}
+		//
+		@Override
+		public final void cancelled() {
+			LOG.debug(Markers.MSG, "{}: batch of I/O tasks canceled", hashCode());
+		}
+	};
+	//
 	@Override
-	public final Future<List<IOTask<T>>> submitRequests(
-		final ReusableList<IOTask<T>> ioTasksBuffer
-	) throws RejectedExecutionException {
+	public final Future<List<IOTask<T>>> submitRequests(final List<IOTask<T>> ioTasksBuffer)
+	throws RejectedExecutionException {
 		//
 		if(connPool.isShutdown()) {
 			throw new RejectedExecutionException("Connection pool is shut down");
 		}
 		//
-		final ReusableList<WSIOTask<T>> wsTasks = (ReusableList) ioTasksBuffer;
+		final List<WSIOTask<T>> wsTasks = (List) ioTasksBuffer;
 		final WSIOTask<T> anyTask = wsTasks.get(0);
-		final BasicFuture<List<WSIOTask<T>>> futureResults = new BasicFuture<>(
-			new FutureCallback<List<WSIOTask<T>>>() {
-				@Override
-				public final void completed(final List<WSIOTask<T>> results) {
-					for(final WSIOTask<T> t : results) {
-						BasicWSLoadExecutor.this.completed(t);
-					}
-					ioTasksBuffer.release();
-				}
-				@Override
-				public final void failed(final Exception e) {
-					LogUtil.exception(LOG, Level.DEBUG, e, "Batch I/O task failure");
-					ioTasksBuffer.release();
-				}
-				@Override
-				public final void cancelled() {
-					LOG.debug(Markers.MSG, "Batch I/O task cancellation");
-					ioTasksBuffer.release();
-				}
-			}
-		);
+		final BasicFuture<List<WSIOTask<T>>> futureResults = new BasicFuture<>(tasksCallback);
 		try {
 			connPool.lease(
 				anyTask.getTarget(), null,
@@ -303,7 +322,7 @@ implements WSLoadExecutor<T> {
 	//
 	@Override @SuppressWarnings("unchecked")
 	protected IOTask<T> getIOTask(final T dataItem, final String nextNodeAddr) {
-		return BasicWSIOTask.getInstance(dataItem, this, nextNodeAddr);
+		return BasicWSIOTask.getInstance(dataItem, wsReqConfCopy, nextNodeAddr);
 	}
 	//
 	@Override
@@ -311,24 +330,7 @@ implements WSLoadExecutor<T> {
 		final List<IOTask<T>> taskBuff, final List<T> dataItems, final int maxCount,
 		final String nextNodeAddr
 	) {
-		BasicWSIOTask.getInstances(taskBuff, dataItems, maxCount, this, nextNodeAddr);
-	}
-	//
-	@Override
-	public void completed(final WSIOTask<T> ioTask) {
-		ioTask.complete();
-	}
-	//
-	@Override
-	public void failed(final Exception e) {
-		if(!reqConfigCopy.isClosed()) {
-			LogUtil.exception(LOG, Level.DEBUG, e, "{}: I/O task failure", hashCode());
-		}
-	}
-	//
-	@Override
-	public void cancelled() {
-		LOG.debug(Markers.MSG, "{}: I/O task canceled", hashCode());
+		BasicWSIOTask.getInstances(taskBuff, dataItems, maxCount, wsReqConfCopy, nextNodeAddr);
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Balancing based on the connection pool stats

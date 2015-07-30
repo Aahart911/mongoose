@@ -2,7 +2,7 @@ package com.emc.mongoose.client.impl.load.executor.tasks;
 //
 import com.emc.mongoose.common.collections.InstancePool;
 import com.emc.mongoose.common.collections.Reusable;
-import com.emc.mongoose.common.collections.ReusableList;
+import com.emc.mongoose.common.conf.RunTimeConfig;
 import com.emc.mongoose.common.log.LogUtil;
 //
 import com.emc.mongoose.common.log.Markers;
@@ -15,6 +15,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 //
 import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 /**
  Created by andrey on 22.05.15.
@@ -35,14 +37,14 @@ implements Runnable, Reusable<RemoteSubmitTask> {
 	//
 	@SuppressWarnings("unchecked")
 	public static <T extends DataItem> RemoteSubmitTask<T> getInstance(
-		final LoadSvc<T> loadSvc, final ReusableList<T> dataItems
+		final LoadSvc<T> loadSvc, final List<T> dataItems
 	) {
 		return INSTANCE_POOL.take(loadSvc, dataItems);
 	}
 	//
 	private LoadSvc<T> loadSvc = null;
 	private T dataItem = null;
-	private ReusableList<T> dataItems = null;
+	private ArrayList<T> dataItems = new ArrayList<>(RunTimeConfig.getContext().getBatchSize());
 	//
 	@Override @SuppressWarnings("unchecked")
 	public final RemoteSubmitTask reuse(final Object... args)
@@ -53,7 +55,9 @@ implements Runnable, Reusable<RemoteSubmitTask> {
 			}
 			if(args.length > 1) {
 				if(List.class.isInstance(args[1])) {
-					dataItems = (ReusableList<T>) args[1];
+					final List<T> dataItemsSrc = (List<T>) args[1];
+					dataItems.ensureCapacity(dataItemsSrc.size());
+					Collections.copy(dataItemsSrc, dataItems);
 					dataItem = null;
 				} else {
 					dataItems = null;
@@ -66,7 +70,6 @@ implements Runnable, Reusable<RemoteSubmitTask> {
 	//
 	@Override
 	public final void release() {
-		dataItems.release();
 		INSTANCE_POOL.release(this);
 	}
 	//
@@ -76,9 +79,11 @@ implements Runnable, Reusable<RemoteSubmitTask> {
 		try {
 			if(dataItem != null) {
 				loadSvc.feed(dataItem);
+				dataItem = null; // for GC info
 			} else if(dataItems != null) {
 				if(dataItems.size() > 0) {
 					loadSvc.feedAll(dataItems);
+					dataItems.clear(); // for GC info
 				}
 			} else {
 				LOG.debug(Markers.ERR, "Empty remote feeding task");

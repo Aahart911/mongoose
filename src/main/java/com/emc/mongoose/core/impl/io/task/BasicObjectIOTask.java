@@ -4,10 +4,10 @@ import com.emc.mongoose.common.collections.InstancePool;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 // mongoose-core-api.jar
+import com.emc.mongoose.core.api.io.req.conf.ObjectRequestConfig;
 import com.emc.mongoose.core.api.io.task.DataObjectIOTask;
 import com.emc.mongoose.core.api.data.DataObject;
 import com.emc.mongoose.core.api.io.task.IOTask;
-import com.emc.mongoose.core.api.load.executor.ObjectLoadExecutor;
 //
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -25,24 +25,24 @@ implements DataObjectIOTask<T> {
 	//
 	private final static Logger LOG = LogManager.getLogger();
 	//
-	public BasicObjectIOTask(final ObjectLoadExecutor<T> loadExecutor) {
-		super(loadExecutor);
+	public BasicObjectIOTask(final ObjectRequestConfig<T> reqConf) {
+		super(reqConf);
 	}
 	//
-	public final static Map<ObjectLoadExecutor<?>, InstancePool<BasicObjectIOTask>>
+	public final static Map<ObjectRequestConfig, InstancePool<BasicObjectIOTask>>
 		INSTANCE_POOL_MAP = new HashMap<>();
 	//
 	@SuppressWarnings("unchecked")
 	public static <T extends DataObject> IOTask<T> getInstance(
-		T dataItem, final ObjectLoadExecutor<T> loadExecutor, final String nodeAddr
+		T dataItem, final ObjectRequestConfig<T> reqConf, final String nodeAddr
 	) {
-		InstancePool<BasicObjectIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
+		InstancePool<BasicObjectIOTask> instPool = INSTANCE_POOL_MAP.get(reqConf);
 		if(instPool == null) {
 			try {
 				instPool = new InstancePool<>(
-					BasicObjectIOTask.class.getConstructor(ObjectLoadExecutor.class), loadExecutor
+					BasicObjectIOTask.class.getConstructor(ObjectRequestConfig.class), reqConf
 				);
-				INSTANCE_POOL_MAP.put(loadExecutor, instPool);
+				INSTANCE_POOL_MAP.put(reqConf, instPool);
 			} catch(final NoSuchMethodException e) {
 				throw new IllegalStateException(e);
 			}
@@ -54,15 +54,15 @@ implements DataObjectIOTask<T> {
 	@SuppressWarnings("unchecked")
 	public static <T extends DataObject> void getInstances(
 		List<IOTask<T>> taskBuff, List<T> dataItems, final int maxCount,
-		final ObjectLoadExecutor<T> loadExecutor, final String nodeAddr
+		final ObjectRequestConfig<T> reqConf, final String nodeAddr
 	) {
-		InstancePool<BasicObjectIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
+		InstancePool<BasicObjectIOTask> instPool = INSTANCE_POOL_MAP.get(reqConf);
 		if(instPool == null) {
 			try {
 				instPool = new InstancePool<>(
-					BasicObjectIOTask.class.getConstructor(ObjectLoadExecutor.class), loadExecutor
+					BasicObjectIOTask.class.getConstructor(ObjectRequestConfig.class), reqConf
 				);
-				INSTANCE_POOL_MAP.put(loadExecutor, instPool);
+				INSTANCE_POOL_MAP.put(reqConf, instPool);
 			} catch(final NoSuchMethodException e) {
 				throw new IllegalStateException(e);
 			}
@@ -75,7 +75,7 @@ implements DataObjectIOTask<T> {
 	//
 	@Override
 	public void release() {
-		final InstancePool<BasicObjectIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
+		final InstancePool<BasicObjectIOTask> instPool = INSTANCE_POOL_MAP.get(reqConf);
 		if(instPool == null) {
 			throw new IllegalStateException("No pool found to release back");
 		} else {
@@ -130,13 +130,6 @@ implements DataObjectIOTask<T> {
 					.append(respTimeDone)
 					.toString()
 			);
-		}
-		//
-		try {
-			loadExecutor.handleResult(this);
-		} catch(final Exception e) {
-			LogUtil.exception(LOG, Level.WARN, e, "Unexpected failure");
-			e.printStackTrace(System.err);
 		}
 		//
 		final int reqSleepMilliSec = reqConf.getReqSleepMilliSec();

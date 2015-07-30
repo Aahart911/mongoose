@@ -12,7 +12,7 @@ public final class ReusableBuffer<T>
 extends ArrayList<T>
 implements ReusableList<T> {
 	//
-	private final static Map<Class<?>, InstancePool<ReusableBuffer>>
+	private final static Map<Class, InstancePool<ReusableBuffer>>
 		BUFFER_POOL_MAP = new HashMap<>();
 	//
 	private InstancePool pool = null;

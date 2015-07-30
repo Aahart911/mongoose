@@ -284,7 +284,7 @@ dependencies {
 		library.commons_collections4,
 		library.httpcore_plus_nio,
 		library.log4j_api,
-		library.metrics_core,
+		library.metrics_core
 	)
 	coreImplRuntime(
 		library.runtime_logging,

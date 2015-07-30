@@ -9,13 +9,11 @@ import com.emc.mongoose.core.api.io.task.IOTask;
 import com.emc.mongoose.core.api.io.req.conf.RequestConfig;
 import com.emc.mongoose.core.api.data.AppendableDataItem;
 import com.emc.mongoose.core.api.data.UpdatableDataItem;
-import com.emc.mongoose.core.api.load.executor.LoadExecutor;
 //
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 //
-import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +32,6 @@ implements IOTask<T> {
 		}
 	};
 	//
-	protected final LoadExecutor<T> loadExecutor;
 	protected final RequestConfig<T> reqConf;
 	//
 	protected volatile String nodeAddr = null;
@@ -44,29 +41,24 @@ implements IOTask<T> {
 	protected volatile long reqTimeStart = 0, reqTimeDone = 0, respTimeStart = 0, respTimeDone = 0;
 	protected volatile long transferSize = 0;
 	//
-	public BasicIOTask(final LoadExecutor<T> loadExecutor) {
-		this.loadExecutor = loadExecutor;
-		try {
-			this.reqConf = loadExecutor.getRequestConfig();
-		} catch(final RemoteException e) {
-			throw new IllegalStateException(e);
-		}
+	public BasicIOTask(final RequestConfig<T> reqConf) {
+		this.reqConf = reqConf;
 	}
 	//
-	public final static Map<LoadExecutor<?>, InstancePool<BasicIOTask>>
+	public final static Map<RequestConfig, InstancePool<BasicIOTask>>
 		INSTANCE_POOL_MAP = new HashMap<>();
 	//
 	@SuppressWarnings("unchecked")
 	public static <T extends DataItem> IOTask<T> getInstance(
-		T dataItem, final LoadExecutor<T> loadExecutor, final String nodeAddr
+		T dataItem, final RequestConfig<T> reqConf, final String nodeAddr
 	) {
-		InstancePool<BasicIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
+		InstancePool<BasicIOTask> instPool = INSTANCE_POOL_MAP.get(reqConf);
 		if(instPool == null) {
 			try {
 				instPool = new InstancePool<>(
-					BasicIOTask.class.getConstructor(LoadExecutor.class), loadExecutor
+					BasicIOTask.class.getConstructor(RequestConfig.class), reqConf
 				);
-				INSTANCE_POOL_MAP.put(loadExecutor, instPool);
+				INSTANCE_POOL_MAP.put(reqConf, instPool);
 			} catch(final NoSuchMethodException e) {
 				throw new IllegalStateException(e);
 			}
@@ -78,15 +70,15 @@ implements IOTask<T> {
 	@SuppressWarnings("unchecked")
 	public static <T extends DataItem> void getInstances(
 		final List<IOTask<T>> taskBuff, List<T> dataItems, final int maxCount,
-		final LoadExecutor<T> loadExecutor, final String nodeAddr
+		final RequestConfig<T> reqConf, final String nodeAddr
 	) {
-		InstancePool<BasicIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
+		InstancePool<BasicIOTask> instPool = INSTANCE_POOL_MAP.get(reqConf);
 		if(instPool == null) {
 			try {
 				instPool = new InstancePool<>(
-					BasicIOTask.class.getConstructor(LoadExecutor.class), loadExecutor
+					BasicIOTask.class.getConstructor(RequestConfig.class), reqConf
 				);
-				INSTANCE_POOL_MAP.put(loadExecutor, instPool);
+				INSTANCE_POOL_MAP.put(reqConf, instPool);
 			} catch(final NoSuchMethodException e) {
 				throw new IllegalStateException(e);
 			}
@@ -114,7 +106,7 @@ implements IOTask<T> {
 	//
 	@Override
 	public void release() {
-		final InstancePool<BasicIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
+		final InstancePool<BasicIOTask> instPool = INSTANCE_POOL_MAP.get(reqConf);
 		if(instPool == null) {
 			throw new IllegalStateException("No pool found to release back");
 		} else {
@@ -169,12 +161,6 @@ implements IOTask<T> {
 					.append(respTimeDone)
 					.toString()
 			);
-		}
-		//
-		try {
-			loadExecutor.handleResult(this);
-		} catch(final RemoteException e) {
-			LogUtil.exception(LOG, Level.WARN, e, "Unexpected network failure");
 		}
 		//
 		final int reqSleepMilliSec = reqConf.getReqSleepMilliSec();

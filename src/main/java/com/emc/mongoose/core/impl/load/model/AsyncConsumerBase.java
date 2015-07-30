@@ -13,15 +13,11 @@ import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 /**
@@ -36,13 +32,14 @@ implements AsyncConsumer<T> {
 	private final long maxCount, submTimeOutMilliSec;
 	protected final int maxQueueSize, batchSize;
 	// states
-	private final AtomicLong counterPreSubm = new AtomicLong(0);
+	private final AtomicLong counterEnqueued = new AtomicLong(0);
 	protected final AtomicBoolean
 		isStarted = new AtomicBoolean(false),
 		isShutdown = new AtomicBoolean(false),
 		isAllSubm = new AtomicBoolean(false);
 	// volatile
 	private final BlockingQueue<T> queue;
+	private final Lock queueBatchAddLock = new ReentrantLock();
 	//
 	public AsyncConsumerBase(
 		final long maxCount, final long submTimeOutMilliSec,
@@ -56,7 +53,8 @@ implements AsyncConsumer<T> {
 		} else {
 			throw new IllegalArgumentException("Invalid max queue size: " + maxQueueSize);
 		}
-		queue = new ArrayBlockingQueue<>(maxQueueSize);
+		queue = new ArrayBlockingQueue<T>(maxQueueSize);
+
 	}
 	//
 	@Override
@@ -81,17 +79,13 @@ implements AsyncConsumer<T> {
 	public void feed(final T item)
 	throws RemoteException, InterruptedException, RejectedExecutionException {
 		if(isStarted.get()) {
-			if(item == null || counterPreSubm.get() >= maxCount) {
+			if(item == null || counterEnqueued.get() >= maxCount) {
 				shutdown();
 			}
 			if(isShutdown.get()) {
 				throw new InterruptedException("Shut down already");
 			}
-			if(queue.offer(item, submTimeOutMilliSec, TimeUnit.MILLISECONDS)) {
-				counterPreSubm.incrementAndGet();
-			} else {
-				throw new RejectedExecutionException("Submit queue timeout");
-			}
+			queue.put(item);
 		} else {
 			throw new RejectedExecutionException("Consuming is not started yet");
 		}
@@ -106,8 +100,25 @@ implements AsyncConsumer<T> {
 	@Override
 	public void feedAll(final List<T> items)
 	throws RemoteException, InterruptedException, RejectedExecutionException {
-		for(final T item : items) {
-			feed(item);
+		if(isStarted.get()) {
+			if(items == null) {
+				shutdown();
+			}
+			if(isShutdown.get()) {
+				throw new InterruptedException("Shut down already");
+			}
+			final int count = items.size();
+			queueBatchAddLock.lock();
+			try {
+				while(queue.remainingCapacity() < count) {
+					Thread.yield();
+				}
+				queue.addAll(items);
+			} finally {
+				queueBatchAddLock.unlock();
+			}
+		} else {
+			throw new RejectedExecutionException("Consuming is not started yet");
 		}
 	}
 	/** Consumes the queue */
@@ -115,27 +126,26 @@ implements AsyncConsumer<T> {
 	public final void run() {
 		LOG.debug(
 			Markers.MSG, "Determined feeding queue capacity of {} for \"{}\"",
-			queue.remainingCapacity(), getName()
+			maxQueueSize, getName()
 		);
 		final List<T> itemBuffer = new ArrayList<>(batchSize);
 		try {
 			// finish if queue is empty and the state is "shutdown"
 			while(queue.size() > 0 || !isShutdown.get()) {
-				queue.drainTo(itemBuffer, batchSize);
-				if(LOG.isTraceEnabled(Markers.MSG)) {
-					LOG.trace(
-						Markers.MSG, "Got next {} data items to feed them sequentially",
-						itemBuffer.size()
-					);
-				}
-				if(itemBuffer.size() > 0) {
+				if(queue.drainTo(itemBuffer, batchSize) > 0) {
+					if(LOG.isTraceEnabled(Markers.MSG)) {
+						LOG.trace(
+							Markers.MSG, "Got next {} data items to feed them sequentially",
+							itemBuffer.size()
+						);
+					}
 					feedSequentiallyAll(itemBuffer);
 					if(LOG.isTraceEnabled(Markers.MSG)) {
 						LOG.trace(Markers.MSG, "Fed {} data items successfully", itemBuffer.size());
 					}
 					itemBuffer.clear();
 				} else {
-					Thread.sleep(10);
+					Thread.yield();
 				}
 			}
 			LOG.debug(Markers.MSG, "{}: consuming finished", getName());
@@ -144,7 +154,7 @@ implements AsyncConsumer<T> {
 		} catch(final RejectedExecutionException e) {
 			LOG.debug(Markers.MSG, "{}: consuming rejected", getName());
 		} catch(final Exception e) {
-			LogUtil.exception(LOG, Level.WARN, e, "Submit item failure");
+			LogUtil.exception(LOG, Level.WARN, e, "Sync feeding failure");
 		} finally {
 			isAllSubm.set(true);
 			shutdown();
@@ -164,7 +174,7 @@ implements AsyncConsumer<T> {
 				getName() + ": not started yet, but shutdown is invoked"
 			);
 		} else */if(isShutdown.compareAndSet(false, true)) {
-			LOG.debug(Markers.MSG, "{}: consumed {} items", getName(), counterPreSubm.get());
+			LOG.debug(Markers.MSG, "{}: consumed {} items", getName(), counterEnqueued.get());
 		}
 	}
 	//
@@ -185,10 +195,6 @@ implements AsyncConsumer<T> {
 	public void close()
 	throws IOException {
 		shutdown();
-		final int dropCount = queue.size();
-		if(dropCount > 0) {
-			LOG.debug(Markers.MSG, "Dropped {} data items", dropCount);
-		}
-		queue.clear(); // dispose
+		queue.clear();
 	}
 }

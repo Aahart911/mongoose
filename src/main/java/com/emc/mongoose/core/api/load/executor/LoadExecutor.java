@@ -1,6 +1,5 @@
 package com.emc.mongoose.core.api.load.executor;
 //
-import com.emc.mongoose.common.collections.ReusableList;
 import com.emc.mongoose.core.api.io.req.conf.RequestConfig;
 import com.emc.mongoose.core.api.io.task.IOTask;
 import com.emc.mongoose.core.api.data.DataItem;
@@ -62,11 +61,8 @@ extends Producer<T>, AsyncConsumer<T> {
 	Future<IOTask<T>> submitRequest(final IOTask<T> request)
 	throws RemoteException, RejectedExecutionException;
 	//
-	Future<List<IOTask<T>>> submitRequests(final ReusableList<IOTask<T>> request)
+	Future<List<IOTask<T>>> submitRequests(final List<IOTask<T>> request)
 	throws RemoteException, RejectedExecutionException;
-	//
-	void handleResult(final IOTask<T> task)
-	throws RemoteException;
 	//
 	LoadState getLoadState()
 	throws RemoteException;

@@ -12,7 +12,6 @@ import com.emc.mongoose.core.api.io.req.conf.WSRequestConfig;
 import com.emc.mongoose.core.api.io.task.IOTask;
 import com.emc.mongoose.core.api.io.task.WSIOTask;
 // mongoose-core-impl
-import com.emc.mongoose.core.api.load.executor.WSLoadExecutor;
 import com.emc.mongoose.core.impl.io.req.BasicWSRequest;
 //
 import org.apache.http.Header;
@@ -59,10 +58,9 @@ implements WSIOTask<T> {
 	);
 	private WSRequestConfig<T> wsReqConf = null; // overrides RequestBase.reqConf field
 	//
-	public BasicWSIOTask(final WSLoadExecutor<T> loadExecutor) {
-		super(loadExecutor);
-		//
-		wsReqConf = (WSRequestConfig<T>) reqConf;
+	public BasicWSIOTask(final WSRequestConfig<T> wsReqConf) {
+		super(wsReqConf);
+		this.wsReqConf = wsReqConf;
 		//final HeaderGroup headers = wsReqConf.getSharedHeaders();
 		sharedHeaders = wsReqConf.getSharedHeaders();
 		/*for(final Header header : headers.getAllHeaders()) {
@@ -74,20 +72,20 @@ implements WSIOTask<T> {
 		}
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	public final static Map<WSLoadExecutor<?>, InstancePool<BasicWSIOTask>>
+	public final static Map<WSRequestConfig, InstancePool<BasicWSIOTask>>
 		INSTANCE_POOL_MAP = new HashMap<>();
 	//
 	@SuppressWarnings("unchecked")
 	public static <T extends WSObject> IOTask<T> getInstance(
-		T dataItem, final WSLoadExecutor<T> loadExecutor, final String nodeAddr
+		T dataItem, final WSRequestConfig<T> wsReqConf, final String nodeAddr
 	) {
-		InstancePool<BasicWSIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
+		InstancePool<BasicWSIOTask> instPool = INSTANCE_POOL_MAP.get(wsReqConf);
 		if(instPool == null) {
 			try {
 				instPool = new InstancePool<>(
-					BasicWSIOTask.class.getConstructor(WSLoadExecutor.class), loadExecutor
+					BasicWSIOTask.class.getConstructor(WSRequestConfig.class), wsReqConf
 				);
-				INSTANCE_POOL_MAP.put(loadExecutor, instPool);
+				INSTANCE_POOL_MAP.put(wsReqConf, instPool);
 			} catch(final NoSuchMethodException e) {
 				throw new IllegalStateException(e);
 			}
@@ -99,15 +97,15 @@ implements WSIOTask<T> {
 	@SuppressWarnings("unchecked")
 	public static <T extends WSObject> void getInstances(
 		final List<IOTask<T>> taskBuff, final List<T> dataItems, final int maxCount,
-		final WSLoadExecutor<T> loadExecutor, final String nodeAddr
+		final WSRequestConfig<T> wsReqConf, final String nodeAddr
 	) {
-		InstancePool<BasicWSIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
+		InstancePool<BasicWSIOTask> instPool = INSTANCE_POOL_MAP.get(wsReqConf);
 		if(instPool == null) {
 			try {
 				instPool = new InstancePool<>(
-					BasicWSIOTask.class.getConstructor(WSLoadExecutor.class), loadExecutor
+					BasicWSIOTask.class.getConstructor(WSRequestConfig.class), wsReqConf
 				);
-				INSTANCE_POOL_MAP.put(loadExecutor, instPool);
+				INSTANCE_POOL_MAP.put(wsReqConf, instPool);
 			} catch(final NoSuchMethodException e) {
 				throw new IllegalStateException(e);
 			}
@@ -120,7 +118,7 @@ implements WSIOTask<T> {
 	//
 	@Override
 	public void release() {
-		final InstancePool<BasicWSIOTask> instPool = INSTANCE_POOL_MAP.get(loadExecutor);
+		final InstancePool<BasicWSIOTask> instPool = INSTANCE_POOL_MAP.get(wsReqConf);
 		if(instPool == null) {
 			throw new IllegalStateException("No pool found to release back");
 		} else {
@@ -128,7 +126,7 @@ implements WSIOTask<T> {
 				LOG.trace(
 					Markers.MSG,
 					"Releasing the task #{} back into the pool for {}: {}",
-					hashCode(), loadExecutor, instPool.toString()
+					hashCode(), wsReqConf, instPool.toString()
 				);
 			}
 			instPool.release(this);

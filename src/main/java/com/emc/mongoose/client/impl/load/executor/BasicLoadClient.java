@@ -9,10 +9,6 @@ import com.emc.mongoose.client.impl.load.executor.gauges.MaxLong;
 import com.emc.mongoose.client.impl.load.executor.gauges.MinLong;
 import com.emc.mongoose.client.impl.load.executor.gauges.SumDouble;
 import com.emc.mongoose.client.impl.load.executor.gauges.SumLong;
-import com.emc.mongoose.common.collections.InstancePool;
-import com.emc.mongoose.common.collections.Reusable;
-import com.emc.mongoose.common.collections.ReusableBuffer;
-import com.emc.mongoose.common.collections.ReusableList;
 import com.emc.mongoose.common.concurrent.GroupThreadFactory;
 import com.emc.mongoose.common.conf.RunTimeConfig;
 import com.emc.mongoose.common.log.LogUtil;
@@ -53,10 +49,8 @@ import javax.management.remote.JMXConnector;
 import java.io.IOException;
 import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -676,10 +670,6 @@ implements LoadClient<T> {
 	throws RejectedExecutionException, InterruptedException {
 		Future remoteSubmFuture = null;
 		String nextLoadSvcAddr;
-		final ReusableList<DataItem> dataItemsDst = ReusableBuffer.getInstance(
-			DataItem.class, dataItemsSrc == null ? 0 : dataItemsSrc.size()
-		);
-		Collections.copy(dataItemsDst, dataItemsSrc);
 		for(
 			int tryCount = 0;
 			tryCount < Short.MAX_VALUE && remoteSubmFuture == null && !isShutdown();
@@ -688,9 +678,7 @@ implements LoadClient<T> {
 			try {
 				nextLoadSvcAddr = loadSvcAddrs[(rrc.get() + tryCount) % loadSvcAddrs.length];
 				remoteSubmFuture = submit(
-					RemoteSubmitTask.getInstance(
-						(LoadSvc<DataItem>) remoteLoadMap.get(nextLoadSvcAddr), dataItemsDst
-					)
+					RemoteSubmitTask.getInstance(remoteLoadMap.get(nextLoadSvcAddr), dataItemsSrc)
 				);
 				rrc.incrementAndGet();
 			} catch(final RejectedExecutionException e) {
@@ -853,14 +841,6 @@ implements LoadClient<T> {
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	@Override
-	public final void handleResult(final IOTask<T> task)
-	throws RemoteException {
-		remoteLoadMap
-			.get(loadSvcAddrs[(int) (getTaskCount() % loadSvcAddrs.length)])
-			.handleResult(task);
-	}
-	//
-	@Override
 	public final void shutdown() {
 		super.shutdown();
 		LOG.debug(Markers.MSG, "{}: shutdown invoked", getName());
@@ -883,7 +863,7 @@ implements LoadClient<T> {
 	}
 	//
 	@Override
-	public final Future submitRequest(final IOTask<T> request)
+	public final Future<IOTask<T>> submitRequest(final IOTask<T> request)
 	throws RemoteException {
 		return remoteLoadMap
 			.get(loadSvcAddrs[(int) (getTaskCount() % loadSvcAddrs.length)])
@@ -891,13 +871,11 @@ implements LoadClient<T> {
 	}
 	//
 	@Override
-	public final Future submitRequests(final ReusableList<IOTask<T>> requests)
+	public final Future<List<IOTask<T>>> submitRequests(final List<IOTask<T>> requests)
 	throws RemoteException {
-		final Future f = remoteLoadMap
+		return remoteLoadMap
 			.get(loadSvcAddrs[(int) (getTaskCount() % loadSvcAddrs.length)])
 			.submitRequests(requests);
-		requests.release();
-		return f;
 	}
 	//
 	@Override

@@ -1,7 +1,6 @@
 package com.emc.mongoose.common.collections;
 // mongoose-common.jar
 import com.emc.mongoose.common.log.LogUtil;
-import com.emc.mongoose.common.log.Markers;
 //
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -9,8 +8,12 @@ import org.apache.logging.log4j.Logger;
 //
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 /**
  Created by andrey on 09.06.14.
  A pool for any reusable objects(instances).
@@ -18,13 +21,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  Such instances pool may improve the performance in some cases.
  */
 public final class InstancePool<T extends Reusable>
-extends ConcurrentLinkedQueue<T> {
+extends LinkedList<T> {
 	//
 	private final static Logger LOG = LogManager.getLogger();
 	//
 	private final Constructor<T> constructor;
 	private final Object sharedArgs[];
 	private final AtomicInteger instCount = new AtomicInteger(0);
+	private final Lock lock = new ReentrantLock();
 	//
 	public InstancePool(final Class<T> cls) {
 		Constructor<T> constr = null;
@@ -47,7 +51,13 @@ extends ConcurrentLinkedQueue<T> {
 	@SuppressWarnings("unchecked")
 	public final T take(final Object... args)
 	throws IllegalStateException, IllegalArgumentException {
-		T instance = poll();
+		T instance;
+		lock.lock();
+		try {
+			instance = poll();
+		} finally {
+			lock.unlock();
+		}
 		if(instance == null) {
 			try {
 				if(sharedArgs == null || sharedArgs.length == 0) {
@@ -71,11 +81,11 @@ extends ConcurrentLinkedQueue<T> {
 	//
 	public final void release(final T instance) {
 		if(instance != null) {
-			if(!offer(instance)) {
-				LOG.debug(
-					Markers.ERR, "Failed to return the instance \"{}\" back into the pool \"{}\"",
-					instance.hashCode(), toString()
-				);
+			lock.lock();
+			try {
+				add(instance);
+			} finally {
+				lock.unlock();
 			}
 		}
 	}
@@ -84,5 +94,35 @@ extends ConcurrentLinkedQueue<T> {
 	public final String toString() {
 		return "InstancePool<" + constructor.getDeclaringClass().getCanonicalName() + ">: " +
 			size() + " instances are in the pool of " + instCount.get() + " total";
+	}
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// the things to simplify pool usage ///////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	private final static Map<Object, InstancePool> POOL_MAP = new HashMap<>();
+	//
+	public static <T extends Reusable<T>> InstancePool<T> getInstancePool(final Class<T> cls) {
+		InstancePool<T> pool;
+		synchronized(POOL_MAP) {
+			pool = POOL_MAP.get(cls);
+			if(pool == null) {
+				pool = new InstancePool<>(cls);
+				POOL_MAP.put(cls, pool);
+			}
+		}
+		return pool;
+	}
+	//
+	public static <T extends Reusable<T>> InstancePool<T> getInstancePool(
+		final Object key, final Constructor<T> constructor, final Object... sharedArgs
+	) {
+		InstancePool<T> pool;
+		synchronized(POOL_MAP) {
+			pool = POOL_MAP.<T>get(key);
+			if(pool == null) {
+				pool = new InstancePool<>(constructor, sharedArgs);
+				POOL_MAP.put(key, pool);
+			}
+		}
+		return pool;
 	}
 }

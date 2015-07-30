@@ -23,6 +23,8 @@ implements ObjectLoadExecutor<T> {
 	//
 	//private final static Logger LOG = LogManager.getLogger();
 	//
+	private final ObjectRequestConfig<T> objReqConfCopy;
+	//
 	protected ObjectLoadExecutorBase(
 		final Class<T> dataCls,
 		final RunTimeConfig runTimeConfig, final ObjectRequestConfig<T> reqConfig, final String[] addrs,
@@ -35,11 +37,12 @@ implements ObjectLoadExecutor<T> {
 			runTimeConfig, reqConfig, addrs, connCountPerNode, listFile, maxCount, sizeMin, sizeMax,
 			sizeBias, rateLimit, countUpdPerReq
 		);
+		this.objReqConfCopy = (ObjectRequestConfig<T>) reqConfigCopy;
 	}
 	//
 	@Override @SuppressWarnings("unchecked")
 	protected IOTask<T> getIOTask(final T dataItem, final String nextNodeAddr) {
-		return BasicObjectIOTask.getInstance(dataItem, this, nextNodeAddr);
+		return BasicObjectIOTask.getInstance(dataItem, objReqConfCopy, nextNodeAddr);
 	}
 	//
 	@Override @SuppressWarnings("unchecked")
@@ -47,7 +50,9 @@ implements ObjectLoadExecutor<T> {
 		final List<IOTask<T>> taskBuff, final List<T> dataItems, final int maxCount,
 		final String nextNodeAddr
 	) {
-		BasicObjectIOTask.getInstances(taskBuff, dataItems, maxCount, this, nextNodeAddr);
+		BasicObjectIOTask.getInstances(
+			taskBuff, dataItems, maxCount, objReqConfCopy, nextNodeAddr
+		);
 	}
 	//
 	@Override
@@ -56,7 +61,10 @@ implements ObjectLoadExecutor<T> {
 		try {
 			super.close();
 		} finally {
-			BasicObjectIOTask.INSTANCE_POOL_MAP.put(this, null); // dispose the I/O tasks pool
+			// dispose the I/O tasks pool
+			if(BasicObjectIOTask.INSTANCE_POOL_MAP.containsKey(objReqConfCopy)) {
+				BasicObjectIOTask.INSTANCE_POOL_MAP.put(objReqConfCopy, null);
+			}
 		}
 	}
 }
