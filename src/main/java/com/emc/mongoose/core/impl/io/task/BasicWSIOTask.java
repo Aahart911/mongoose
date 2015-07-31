@@ -497,6 +497,7 @@ implements WSIOTask<T> {
 	@Override
 	public final boolean cancel() {
 		LOG.debug(Markers.MSG, "{}: I/O task cancel", hashCode());
+		cancelled();
 		return false;
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////
@@ -516,6 +517,9 @@ implements WSIOTask<T> {
 	public final Object removeAttribute(final String s) {
 		return wrappedHttpCtx.removeAttribute(s);
 	}
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	// FutureCallback implementation ///////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////
 	/**
 	 Overrides HttpAsyncRequestProducer.failed(Exception) and
 	 HttpAsyncResponseConsumer&lt;IOTask.Status&gt;.failed(Exception)
@@ -526,6 +530,17 @@ implements WSIOTask<T> {
 		LogUtil.exception(LOG, Level.WARN, e, "{}: I/O task failure", hashCode());
 		exception = e;
 		status = Status.FAIL_UNKNOWN;
+		complete();
+	}
+	//
+	@Override
+	public void completed(final WSIOTask<T> result) {
+		complete();
+	}
+	//
+	@Override
+	public void cancelled() {
+		status = Status.CANCELLED;
 		complete();
 	}
 }

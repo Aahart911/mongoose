@@ -895,6 +895,11 @@ implements LoadExecutor<T> {
 		}
 		//
 		counterResults.incrementAndGet();
+		try {
+			ioTaskSpentQueue.put(ioTask);
+		} catch(final InterruptedException e) {
+			LogUtil.exception(LOG, Level.WARN, e, "Interrupted");
+		}
 	}
 	//
 	@Override

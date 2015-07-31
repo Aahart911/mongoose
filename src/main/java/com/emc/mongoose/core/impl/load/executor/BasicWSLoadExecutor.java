@@ -1,5 +1,7 @@
 package com.emc.mongoose.core.impl.load.executor;
 // mongoose-common.jar
+import com.emc.mongoose.common.collections.InstancePool;
+import com.emc.mongoose.common.collections.Reusable;
 import com.emc.mongoose.common.concurrent.GroupThreadFactory;
 import com.emc.mongoose.common.conf.Constants;
 import com.emc.mongoose.common.conf.RunTimeConfig;
@@ -218,27 +220,6 @@ implements WSLoadExecutor<T> {
 		}
 	}
 	//
-	private final FutureCallback<WSIOTask<T>> taskCallback = new FutureCallback<WSIOTask<T>>() {
-		//
-		@Override
-		public final void completed(final WSIOTask<T> task) {
-			task.complete();
-			handleResult(task);
-		}
-		//
-		@Override
-		public final void failed(final Exception e) {
-			if(!reqConfigCopy.isClosed()) {
-				LogUtil.exception(LOG, Level.DEBUG, e, "{}: I/O task failure", hashCode());
-			}
-		}
-		//
-		@Override
-		public final void cancelled() {
-			LOG.debug(Markers.MSG, "{}: I/O task canceled", hashCode());
-		}
-	};
-	//
 	@Override @SuppressWarnings("unchecked")
 	public final Future<IOTask<T>> submitRequest(final IOTask<T> ioTask)
 	throws RejectedExecutionException {
@@ -248,47 +229,25 @@ implements WSLoadExecutor<T> {
 		}
 		//
 		final WSIOTask<T> wsTask = (WSIOTask<T>) ioTask;
-		final BasicFuture<WSIOTask<T>> futureResult = new BasicFuture<>(taskCallback);
+		final TaskFuture taskFuture = taskFuturePool.take(wsTask);
 		try {
 			connPool.lease(
 				wsTask.getTarget(), null,
 				client.getConnRequestCallback(
-					futureResult, wsTask, wsTask, connPool, wsTask
+					taskFuture, wsTask, wsTask, connPool, wsTask
 				)
 			);
 			if(LOG.isTraceEnabled(Markers.MSG)) {
 				LOG.trace(
 					Markers.MSG, "I/O task #{} has been submitted for execution: {}",
-					wsTask.hashCode(), futureResult
+					wsTask.hashCode(), taskFuture
 				);
 			}
 		} catch(final Exception e) {
 			throw new RejectedExecutionException(e);
 		}
-		return (Future) futureResult;
+		return (Future) taskFuture;
 	}
-	//
-	private final FutureCallback<List<WSIOTask<T>>> tasksCallback = new FutureCallback<List<WSIOTask<T>>>() {
-		//
-		@Override
-		public final void completed(final List<WSIOTask<T>> tasks) {
-			for(final WSIOTask<T> task : tasks) {
-				taskCallback.completed(task);
-			}
-		}
-		//
-		@Override
-		public final void failed(final Exception e) {
-			if(!reqConfigCopy.isClosed()) {
-				LogUtil.exception(LOG, Level.DEBUG, e, "{}: batch I/O tasks failure", hashCode());
-			}
-		}
-		//
-		@Override
-		public final void cancelled() {
-			LOG.debug(Markers.MSG, "{}: batch of I/O tasks canceled", hashCode());
-		}
-	};
 	//
 	@Override
 	public final Future<List<IOTask<T>>> submitRequests(final List<IOTask<T>> ioTasksBuffer)
@@ -300,12 +259,12 @@ implements WSLoadExecutor<T> {
 		//
 		final List<WSIOTask<T>> wsTasks = (List) ioTasksBuffer;
 		final WSIOTask<T> anyTask = wsTasks.get(0);
-		final BasicFuture<List<WSIOTask<T>>> futureResults = new BasicFuture<>(tasksCallback);
+		final BatchTaskFuture tasksFuture = taskBatchFuturePool.take(wsTasks);
 		try {
 			connPool.lease(
 				anyTask.getTarget(), null,
 				client.getConnPipelinedRequestCallback(
-					futureResults, wsTasks, wsTasks, connPool, anyTask
+					tasksFuture, wsTasks, wsTasks, connPool, anyTask
 				)
 			);
 			if(LOG.isTraceEnabled(Markers.MSG)) {
@@ -317,7 +276,7 @@ implements WSLoadExecutor<T> {
 		} catch(final Exception e) {
 			throw new RejectedExecutionException(e);
 		}
-		return (Future) futureResults;
+		return (Future) tasksFuture;
 	}
 	//
 	@Override @SuppressWarnings("unchecked")
@@ -331,6 +290,122 @@ implements WSLoadExecutor<T> {
 		final String nextNodeAddr
 	) {
 		BasicWSIOTask.getInstances(taskBuff, dataItems, maxCount, wsReqConfCopy, nextNodeAddr);
+	}
+	//
+	private final InstancePool<TaskFuture>
+		taskFuturePool = InstancePool.getInstancePool(TaskFuture.class);
+	//
+	public final class TaskFuture
+	extends BasicFuture<WSIOTask<T>>
+	implements Reusable<TaskFuture> {
+		//
+		private WSIOTask<T> linkedTask;
+		//
+		public TaskFuture() {
+			super(null);
+		}
+		//
+		@Override
+		public final boolean completed(final WSIOTask<T> result) {
+			final boolean isCompleted = super.completed(result);
+			linkedTask.completed(result);
+			handleResult(linkedTask);
+			release();
+			return isCompleted;
+		}
+		//
+		@Override
+		public final boolean failed(final Exception e) {
+			final boolean isFailed = super.failed(e);
+			linkedTask.failed(e);
+			handleResult(linkedTask);
+			release();
+			return isFailed;
+		}
+		//
+		@Override
+		public final boolean cancel(final boolean mayInterruptIfRunning) {
+			final boolean cancelled = super.cancel(mayInterruptIfRunning);
+			linkedTask.cancel();
+			handleResult(linkedTask);
+			release();
+			return cancelled;
+		}
+		//
+		@Override
+		public Reusable<TaskFuture> reuse(final Object... args)
+		throws IllegalArgumentException, IllegalStateException {
+			if(args != null && args.length > 0) {
+				linkedTask = (WSIOTask<T>) args[0];
+			}
+			return this;
+		}
+		//
+		@Override
+		public final void release() {
+			taskFuturePool.release(this);
+		}
+	}
+	//
+	private final InstancePool<BatchTaskFuture>
+		taskBatchFuturePool = InstancePool.getInstancePool(BatchTaskFuture.class);
+	//
+	public final class BatchTaskFuture
+	extends BasicFuture<List<WSIOTask<T>>>
+	implements Reusable<BatchTaskFuture> {
+		//
+		private List<WSIOTask<T>> linkedTasks;
+		//
+		public BatchTaskFuture() {
+			super(null);
+		}
+		//
+		@Override
+		public final boolean completed(final List<WSIOTask<T>> result) {
+			final boolean isCompleted = super.completed(result);
+			for(final WSIOTask<T> task : linkedTasks) {
+				task.completed(task);
+				handleResult(task);
+			}
+			release();
+			return isCompleted;
+		}
+		//
+		@Override
+		public final boolean failed(final Exception e) {
+			final boolean isFailed = super.failed(e);
+			for(final WSIOTask<T> task : linkedTasks) {
+				task.failed(e);
+				handleResult(task);
+			}
+			release();
+			return isFailed;
+		}
+		//
+		@Override
+		public final boolean cancel(final boolean mayInterruptIfRunning) {
+			final boolean cancelled = super.cancel(mayInterruptIfRunning);
+			for(final WSIOTask<T> task : linkedTasks) {
+				task.cancel();
+				handleResult(task);
+			}
+			release();
+			return cancelled;
+		}
+		//
+		@Override
+		public Reusable<BatchTaskFuture> reuse(final Object... args)
+			throws IllegalArgumentException, IllegalStateException {
+			if(args != null && args.length > 0) {
+				linkedTasks = (List<WSIOTask<T>>) args[0];
+			}
+			return this;
+		}
+		//
+		@Override
+		public final void release() {
+			taskBatchFuturePool.release(this);
+		}
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Balancing based on the connection pool stats
