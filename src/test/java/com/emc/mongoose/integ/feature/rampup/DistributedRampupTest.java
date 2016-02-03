@@ -1,7 +1,7 @@
 package com.emc.mongoose.integ.feature.rampup;
 //
 import com.emc.mongoose.common.conf.Constants;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.common.log.appenders.RunIdFileManager;
@@ -48,19 +48,19 @@ extends DistributedLoadBuilderTestBase {
 	@BeforeClass
 	public static void setUpClass()
 	throws Exception {
-		System.setProperty(RunTimeConfig.KEY_RUN_ID, DistributedRampupTest.class.getCanonicalName());
+		System.setProperty(BasicConfig.KEY_RUN_ID, DistributedRampupTest.class.getCanonicalName());
 		DistributedLoadBuilderTestBase.setUpClass();
 		//
-		final RunTimeConfig rtConfig = RunTimeConfig.getContext();
-		rtConfig.set(RunTimeConfig.KEY_SCENARIO_CHAIN_CONCURRENT, "false");
-		rtConfig.set(RunTimeConfig.KEY_LOAD_LIMIT_TIME, Long.toString(LOAD_LIMIT_TIME_SEC) + "s");
-		rtConfig.set(RunTimeConfig.KEY_LOAD_METRICS_PERIOD_SEC, "0");
-		rtConfig.set(RunTimeConfig.KEY_RUN_MODE, Constants.RUN_MODE_CLIENT);
-		rtConfig.set(RunTimeConfig.KEY_API_NAME, "swift");
-		rtConfig.set(RunTimeConfig.KEY_SCENARIO_CHAIN_LOAD, LOAD_SEQ);
-		rtConfig.set(RunTimeConfig.KEY_SCENARIO_RAMPUP_SIZES, SIZE_SEQ);
-		rtConfig.set(RunTimeConfig.KEY_SCENARIO_RAMPUP_CONN_COUNTS, THREAD_COUNT_SEQ);
-		RunTimeConfig.setContext(rtConfig);
+		final BasicConfig rtConfig = BasicConfig.getContext();
+		rtConfig.set(BasicConfig.KEY_SCENARIO_CHAIN_CONCURRENT, "false");
+		rtConfig.set(BasicConfig.KEY_LOAD_LIMIT_TIME, Long.toString(LOAD_LIMIT_TIME_SEC) + "s");
+		rtConfig.set(BasicConfig.KEY_LOAD_METRICS_PERIOD_SEC, "0");
+		rtConfig.set(BasicConfig.KEY_RUN_MODE, Constants.RUN_MODE_CLIENT);
+		rtConfig.set(BasicConfig.KEY_API_NAME, "swift");
+		rtConfig.set(BasicConfig.KEY_SCENARIO_CHAIN_LOAD, LOAD_SEQ);
+		rtConfig.set(BasicConfig.KEY_SCENARIO_RAMPUP_SIZES, SIZE_SEQ);
+		rtConfig.set(BasicConfig.KEY_SCENARIO_RAMPUP_CONN_COUNTS, THREAD_COUNT_SEQ);
+		BasicConfig.setContext(rtConfig);
 		//
 		final Rampup rampupScenario = new Rampup(rtConfig);
 		//

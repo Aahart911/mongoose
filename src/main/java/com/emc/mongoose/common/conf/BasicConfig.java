@@ -7,9 +7,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 //
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.SystemConfiguration;
+import org.apache.commons.configuration.tree.DefaultExpressionEngine;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.text.StrBuilder;
 //
@@ -18,7 +19,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
 //
-import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -40,9 +40,9 @@ import java.nio.file.Paths;
  Created by kurila on 28.05.14.
  A shared runtime configuration.
  */
-public final class RunTimeConfig
-extends BaseConfiguration
-implements Externalizable {
+public final class BasicConfig
+extends HierarchicalConfiguration
+implements AppConifg {
 	//
 	public final static String
 		LIST_SEP = ",",
@@ -136,15 +136,15 @@ implements Externalizable {
 		//
 		FNAME_CONF = "mongoose.json";
 	//
-	private static InheritableThreadLocal<RunTimeConfig>
+	private static InheritableThreadLocal<BasicConfig>
 		CONTEXT_CONFIG = new InheritableThreadLocal<>();
 	private static final List<String>
 		IMMUTABLE_PARAMS = new ArrayList<>();
-	private static RunTimeConfig DEFAULT_INSTANCE;
+	private static BasicConfig DEFAULT_INSTANCE;
 	//
 	public static void initContext() {
 		final Logger log = LogManager.getLogger();
-		final RunTimeConfig instance = new RunTimeConfig();
+		final BasicConfig instance = new BasicConfig();
 		DEFAULT_INSTANCE = instance;
 		instance.loadProperties();
 		final String
@@ -157,11 +157,11 @@ implements Externalizable {
 			instance.set(KEY_RUN_MODE, runMode);
 		}
 		setContext(instance);
-		log.info(Markers.CFG, RunTimeConfig.getContext().toFormattedString());
+		log.info(Markers.CFG, BasicConfig.getContext().toFormattedString());
 	}
 	//
-	public static RunTimeConfig getDefault() {
-		return (RunTimeConfig) DEFAULT_INSTANCE.clone();
+	public static BasicConfig getDefault() {
+		return (BasicConfig) DEFAULT_INSTANCE.clone();
 	}
 	//
 	public void loadProperties() {
@@ -187,15 +187,15 @@ implements Externalizable {
 		return null;
 	}
 	//
-	public static RunTimeConfig getContext() {
-		final RunTimeConfig instance = CONTEXT_CONFIG.get();
+	public static BasicConfig getContext() {
+		final BasicConfig instance = CONTEXT_CONFIG.get();
 		if(instance == null) {
 			initContext();
 		}
 		return CONTEXT_CONFIG.get();
 	}
 	//
-	public static void setContext(final RunTimeConfig instance) {
+	public static void setContext(final BasicConfig instance) {
 		CONTEXT_CONFIG.set(instance);
 		ThreadContext.put(KEY_RUN_ID, instance.getRunId());
 		ThreadContext.put(KEY_RUN_MODE, instance.getRunMode());
@@ -218,7 +218,8 @@ implements Externalizable {
 	}
 	//
 	static {
-		final ClassLoader cl = RunTimeConfig.class.getClassLoader();
+		HierarchicalConfiguration.setDefaultExpressionEngine(new DefaultExpressionEngine());
+		final ClassLoader cl = BasicConfig.class.getClassLoader();
 		final URL urlPolicy = cl.getResource("allpermissions.policy");
 		if(urlPolicy == null) {
 			System.err.println(
@@ -250,7 +251,7 @@ implements Externalizable {
 		return rootNode.toString();
 	}
 	//
-	public boolean isImmutableParamsChanged(final RunTimeConfig loadStateCfg) {
+	public boolean isImmutableParamsChanged(final BasicConfig loadStateCfg) {
 		for (final String param : IMMUTABLE_PARAMS) {
 			if (!getString(param).equals(loadStateCfg.getString(param))) {
 				return true;
@@ -682,12 +683,12 @@ implements Externalizable {
 		if(serverVersion.equals(clientVersion)) {
 			// put the properties into the System
 			Object nextPropValue;
-			final RunTimeConfig localRunTimeConfig = CONTEXT_CONFIG.get();
+			final BasicConfig ctxConfig = CONTEXT_CONFIG.get();
 			for(final String nextPropName : confMap.keySet()) {
 				// do not override the JMX port from the load client side
 				// in order to allow to run both client and server on the same host
 				if(nextPropName.startsWith(KEY_REMOTE_PORT_MONITOR)) {
-					nextPropValue = localRunTimeConfig.getProperty(nextPropName);
+					nextPropValue = ctxConfig.getProperty(nextPropName);
 				} else {
 					nextPropValue = confMap.get(nextPropName);
 				}
@@ -753,9 +754,18 @@ implements Externalizable {
 		}
 	}
 	//
-	public void overrideSystemProperties(Map<String, String> props){
-		for(Map.Entry<String, String> entry : props.entrySet()){
-			setProperty(entry.getKey(), entry.getValue());
+	@Override
+	public void override(final String configBranch, final Map<String, ?> configTree) {
+		Object v;
+		String compositeKey;
+		for(final String k : configTree.keySet()) {
+			v = configTree.get(k);
+			compositeKey = configBranch == null ? k : configBranch + getDefaultListDelimiter() + k;
+			if(v instanceof Map) {
+				override(compositeKey, (Map<String, ?>) v);
+			} else {
+				setProperty(compositeKey, v);
+			}
 		}
 	}
 	//

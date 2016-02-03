@@ -1,7 +1,7 @@
 package com.emc.mongoose.run.webserver;
 //
 import com.emc.mongoose.common.conf.Constants;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 //
 import org.apache.logging.log4j.Level;
@@ -19,7 +19,7 @@ public class WUIRunner
 implements Runnable {
 	//
 	private final static Logger LOG = LogManager.getLogger();
-	private final RunTimeConfig runTimeConfig;
+	private final BasicConfig appConfig;
 	//
 	public final static String
 			webResourceBaseDir,
@@ -27,27 +27,27 @@ implements Runnable {
 	//
 	static {
 		webResourceBaseDir = Paths
-			.get(RunTimeConfig.DIR_ROOT, Constants.DIR_WEBAPP)
+			.get(BasicConfig.DIR_ROOT, Constants.DIR_WEBAPP)
 			.toString();
 		webDescriptorBaseDir = Paths
-			.get(RunTimeConfig.DIR_ROOT, Constants.DIR_WEBAPP, Constants.DIR_WEBINF)
+			.get(BasicConfig.DIR_ROOT, Constants.DIR_WEBAPP, Constants.DIR_WEBINF)
 			.resolve("web.xml").toString();
 	}
 	//
-	public WUIRunner(RunTimeConfig runTimeConfig) {
-        this.runTimeConfig = runTimeConfig;
+	public WUIRunner(BasicConfig appConfig) {
+        this.appConfig = appConfig;
     }
 	//
 	@Override
 	public void run() {
-		final Server server = new Server(runTimeConfig.getRemotePortWebUI());
+		final Server server = new Server(appConfig.getRemotePortWebUI());
 		//
 		final WebAppContext webAppContext = new WebAppContext();
 		webAppContext.setContextPath("/");
 		webAppContext.setResourceBase(webResourceBaseDir);
 		webAppContext.setDescriptor(webDescriptorBaseDir);
 		webAppContext.setParentLoaderPriority(true);
-		webAppContext.setAttribute("rtConfig", runTimeConfig);
+		webAppContext.setAttribute("rtConfig", appConfig);
 		//
 		server.setHandler(webAppContext);
 		try {

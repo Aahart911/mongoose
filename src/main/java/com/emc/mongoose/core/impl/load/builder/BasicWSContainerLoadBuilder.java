@@ -1,6 +1,7 @@
 package com.emc.mongoose.core.impl.load.builder;
 
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.concurrent.ThreadUtil;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.core.api.item.container.Container;
 import com.emc.mongoose.core.api.item.data.WSObject;
@@ -29,10 +30,10 @@ implements WSContainerLoadBuilder<T, C, U> {
 	//
 	private final static Logger LOG = LogManager.getLogger();
 	//
-	public BasicWSContainerLoadBuilder(final RunTimeConfig runTimeConfig)
+	public BasicWSContainerLoadBuilder(final BasicConfig appConfig)
 	throws RemoteException {
-		super(runTimeConfig);
-		setRunTimeConfig(runTimeConfig);
+		super(appConfig);
+		setRunTimeConfig(appConfig);
 	}
 	//
 	@Override @SuppressWarnings("unchecked")
@@ -41,12 +42,12 @@ implements WSContainerLoadBuilder<T, C, U> {
 	}
 	//
 	@Override
-	public BasicWSContainerLoadBuilder<T, C, U> setRunTimeConfig(final RunTimeConfig rtConfig)
+	public BasicWSContainerLoadBuilder<T, C, U> setRunTimeConfig(final BasicConfig rtConfig)
 	throws RemoteException {
 		//
 		super.setRunTimeConfig(rtConfig);
 		//
-		final String paramName = RunTimeConfig.KEY_STORAGE_SCHEME;
+		final String paramName = BasicConfig.KEY_STORAGE_SCHEME;
 		try {
 			WSRequestConfig.class.cast(ioConfig).setScheme(rtConfig.getStorageProto());
 		} catch(final NoSuchElementException e) {
@@ -81,19 +82,15 @@ implements WSContainerLoadBuilder<T, C, U> {
 		}
 		//
 		final WSRequestConfig wsReqConf = WSRequestConfig.class.cast(ioConfig);
-		final RunTimeConfig localRunTimeConfig = RunTimeConfig.getContext();
+		final BasicConfig ctxConfig = BasicConfig.getContext();
 		//
-		final IOTask.Type loadType = ioConfig.getLoadType();
-		final int
-			connPerNode = loadTypeConnPerNode.get(loadType),
-			minThreadCount = getMinIOThreadCount(
-				loadTypeWorkerCount.get(loadType), storageNodeAddrs.length, connPerNode
-			);
+		final int minThreadCount = getMinIoThreadCount(
+			ThreadUtil.getWorkerCount(), storageNodeAddrs.length, threadCount
+		);
 		//
 		return (U) new BasicWSContainerLoadExecutor<>(
-			localRunTimeConfig, wsReqConf, storageNodeAddrs, connPerNode, minThreadCount,
-			itemSrc == null ? getDefaultItemSource() : itemSrc,
-			maxCount, manualTaskSleepMicroSecs, rateLimit
+			ctxConfig, wsReqConf, storageNodeAddrs, threadCount, minThreadCount,
+			itemSrc == null ? getDefaultItemSource() : itemSrc, limitCount, limitRate
 		);
 	}
 }

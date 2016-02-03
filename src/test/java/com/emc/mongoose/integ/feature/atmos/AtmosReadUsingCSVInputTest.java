@@ -1,6 +1,6 @@
 package com.emc.mongoose.integ.feature.atmos;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.conf.SizeUtil;
 import com.emc.mongoose.common.log.appenders.RunIdFileManager;
 import com.emc.mongoose.core.api.item.data.WSObject;
@@ -29,7 +29,7 @@ extends StandaloneClientTestBase {
 	throws Exception {
 		//
 		System.setProperty(
-			RunTimeConfig.KEY_RUN_ID, AtmosReadUsingCSVInputTest.class.getCanonicalName()
+			BasicConfig.KEY_RUN_ID, AtmosReadUsingCSVInputTest.class.getCanonicalName()
 		);
 		StandaloneClientTestBase.setUpClass();
 		//

@@ -1,5 +1,5 @@
 package com.emc.mongoose.integ.feature.swift;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.conf.SizeUtil;
 import com.emc.mongoose.common.log.appenders.RunIdFileManager;
 import com.emc.mongoose.core.api.item.container.Container;
@@ -33,12 +33,12 @@ extends StandaloneClientTestBase {
 	public static void setUpClass()
 	throws Exception {
 		//
-		System.setProperty(RunTimeConfig.KEY_RUN_ID, RUN_ID);
+		System.setProperty(BasicConfig.KEY_RUN_ID, RUN_ID);
 		StandaloneClientTestBase.setUpClass();
 		//
 		final WSRequestConfigImpl reqConf = (WSRequestConfigImpl) WSRequestConfigBase
 			.newInstanceFor("swift")
-			.setRunTimeConfig(RunTimeConfig.getContext());
+			.setAppConfig(BasicConfig.getContext());
 		CONTAINER_HELPER = new WSSwiftContainerHelper<WSObject, Container<WSObject>>(
 				reqConf, new BasicContainer(RUN_ID)
 		);
@@ -64,7 +64,7 @@ extends StandaloneClientTestBase {
 	@AfterClass
 	public static void tearDownClass()
 	throws Exception {
-		CONTAINER_HELPER.delete(RunTimeConfig.getContext().getStorageAddrs()[0]);
+		CONTAINER_HELPER.delete(BasicConfig.getContext().getStorageAddrs()[0]);
 		StandaloneClientTestBase.tearDownClass();
 	}
 	//

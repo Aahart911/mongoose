@@ -3,7 +3,7 @@ package com.emc.mongoose.storage.mock.impl.web;
 import static com.emc.mongoose.common.conf.Constants.BUFF_SIZE_LO;
 
 import com.emc.mongoose.common.concurrent.ThreadUtil;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.date.LowPrecisionDateGenerator;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
@@ -54,12 +54,12 @@ implements WSMock<T> {
 	private final NHttpConnectionFactory<DefaultNHttpServerConnection> connFactory;
 	private final int portStart;
 	//
-	public Cinderella(final RunTimeConfig rtConfig)
+	public Cinderella(final BasicConfig rtConfig)
 	throws IOException {
 		this(rtConfig, rtConfig.getStorageMockWorkersPerSocket());
 	}
 	//
-	private Cinderella(final RunTimeConfig rtConfig, final int ioThreadCount)
+	private Cinderella(final BasicConfig rtConfig, final int ioThreadCount)
 	throws IOException {
 		this(
 			rtConfig.getStorageMockHeadCount(),
@@ -118,7 +118,7 @@ implements WSMock<T> {
 			.add( // user-agent header
 				new ResponseServer(
 					Cinderella.class.getSimpleName() + "/" +
-					RunTimeConfig.getContext().getRunVersion()
+					BasicConfig.getContext().getRunVersion()
 				)
 			)
 			.add(new ResponseContent())
@@ -126,7 +126,7 @@ implements WSMock<T> {
 			.build();
 		// Create request handler registry
 		final HttpAsyncRequestHandlerMapper apiReqHandlerMapper = new APIRequestHandlerMapper<>(
-			RunTimeConfig.getContext(), this
+			BasicConfig.getContext(), this
 		);
 		// Register the default handler for all URIs
 		protocolHandler = new HttpAsyncService(httpProc, apiReqHandlerMapper);
@@ -139,7 +139,7 @@ implements WSMock<T> {
 			nextPort = portStart + i;
 			try {
 				sockEvtDispatchers[i] = new BasicSocketEventDispatcher(
-					RunTimeConfig.getContext(), protocolHandler, nextPort, connFactory, ioStats
+					BasicConfig.getContext(), protocolHandler, nextPort, connFactory, ioStats
 				);
 				sockEvtDispatchers[i].start();
 			} catch(final IOReactorException e) {

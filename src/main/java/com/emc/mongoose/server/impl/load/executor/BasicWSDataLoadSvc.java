@@ -2,7 +2,7 @@ package com.emc.mongoose.server.impl.load.executor;
 // mongoose-common.jar
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.net.Service;
 import com.emc.mongoose.common.net.ServiceUtil;
 // mongoose-core-api.jar
@@ -36,16 +36,16 @@ implements WSDataLoadSvc<T> {
 	private final static Logger LOG = LogManager.getLogger();
 	//
 	public BasicWSDataLoadSvc(
-		final RunTimeConfig runTimeConfig,
+		final BasicConfig appConfig,
 		final WSRequestConfig<T, ? extends Container<T>> reqConfig,
 		final String[] addrs, final int connPerNode, final int threadsPerNode,
 		final ItemSrc<T> itemSrc, final long maxCount,
 		final long sizeMin, final long sizeMax, final float sizeBias,
-		final int manualTaskSleepMicroSecs, final float rateLimit, final int countUpdPerReq
+		final float rateLimit, final int countUpdPerReq
 	) {
 		super(
-			runTimeConfig, reqConfig, addrs, connPerNode, threadsPerNode, itemSrc, maxCount,
-			sizeMin, sizeMax, sizeBias, manualTaskSleepMicroSecs, rateLimit, countUpdPerReq
+			appConfig, reqConfig, addrs, connPerNode, threadsPerNode, itemSrc, maxCount,
+			sizeMin, sizeMax, sizeBias, rateLimit, countUpdPerReq
 		);
 	}
 	//

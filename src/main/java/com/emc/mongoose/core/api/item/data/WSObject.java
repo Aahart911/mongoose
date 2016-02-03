@@ -1,6 +1,6 @@
 package com.emc.mongoose.core.api.item.data;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -15,9 +15,9 @@ public interface WSObject
 extends MutableDataItem, HttpEntity {
 	//
 	Header HEADER_CONTENT_TYPE = new BasicHeader(
-		HTTP.CONTENT_TYPE, RunTimeConfig.getContext().getHttpContentType()
+		HTTP.CONTENT_TYPE, BasicConfig.getContext().getHttpContentType()
 	);
 	boolean
-		IS_CONTENT_CHUNKED = RunTimeConfig.getContext().getHttpContentChunked(),
-		IS_CONTENT_REPEATABLE = RunTimeConfig.getContext().getHttpContentRepeatable();
+		IS_CONTENT_CHUNKED = BasicConfig.getContext().getHttpContentChunked(),
+		IS_CONTENT_REPEATABLE = BasicConfig.getContext().getHttpContentRepeatable();
 }

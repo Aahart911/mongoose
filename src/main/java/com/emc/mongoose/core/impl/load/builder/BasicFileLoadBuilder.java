@@ -1,6 +1,6 @@
 package com.emc.mongoose.core.impl.load.builder;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.conf.SizeUtil;
 //
 import com.emc.mongoose.core.api.item.container.Directory;
@@ -22,7 +22,7 @@ import java.rmi.RemoteException;
 public class BasicFileLoadBuilder<T extends FileItem, U extends FileLoadExecutor<T>>
 extends DataLoadBuilderBase<T, U> {
 	//
-	public BasicFileLoadBuilder(final RunTimeConfig rtConfig)
+	public BasicFileLoadBuilder(final BasicConfig rtConfig)
 	throws RemoteException {
 		super(rtConfig);
 	}
@@ -58,13 +58,10 @@ extends DataLoadBuilderBase<T, U> {
 				)
 			);
 		}
-		final IOTask.Type loadType = ioConfig.getLoadType();
-		final int threadCount = loadTypeConnPerNode.get(loadType);
 		return (U) new BasicFileLoadExecutor<>(
-			RunTimeConfig.getContext(), (FileIOConfig<T, ? extends Directory<T>>) ioConfig,
+			BasicConfig.getContext(), (FileIOConfig<T, ? extends Directory<T>>) ioConfig,
 			null, 0, threadCount, itemSrc == null ? getDefaultItemSource() : itemSrc,
-			maxCount, minObjSize, maxObjSize, objSizeBias,
-			manualTaskSleepMicroSecs, rateLimit, updatesPerItem
+			limitCount, minObjSize, maxObjSize, objSizeBias, limitRate, updatesPerItem
 		);
 	}
 }

@@ -1,7 +1,7 @@
 package com.emc.mongoose.core.impl.load.executor;
 //
 import com.emc.mongoose.common.conf.Constants;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.io.IOWorker;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
@@ -80,13 +80,12 @@ implements WSContainerLoadExecutor<T, C> {
 	private final boolean isPipeliningEnabled;
 	//
 	public BasicWSContainerLoadExecutor(
-		final RunTimeConfig rtConfig, final WSRequestConfig<T, C> reqConfig, final String[] addrs,
+		final BasicConfig rtConfig, final WSRequestConfig<T, C> reqConfig, final String[] addrs,
 		final int connCountPerNode, final int threadCount, final ItemSrc<C> itemSrc,
-		final long maxCount, final int manualTaskSleepMicroSecs, final float rateLimit
+		final long maxCount, final float rateLimit
 	) throws ClassCastException {
 		super(
-			rtConfig, reqConfig, addrs, connCountPerNode, threadCount, itemSrc, maxCount,
-			manualTaskSleepMicroSecs, rateLimit
+			rtConfig, reqConfig, addrs, connCountPerNode, threadCount, itemSrc, maxCount, rateLimit
 		);
 		//
 		this.loadType = reqConfig.getLoadType();
@@ -121,7 +120,7 @@ implements WSContainerLoadExecutor<T, C> {
 			}
 		);
 		//
-		final RunTimeConfig thrLocalConfig = RunTimeConfig.getContext();
+		final BasicConfig thrLocalConfig = BasicConfig.getContext();
 		final long timeOutMs = rtConfig.getLoadLimitTimeUnit().toMillis(
 			rtConfig.getLoadLimitTimeValue()
 		);

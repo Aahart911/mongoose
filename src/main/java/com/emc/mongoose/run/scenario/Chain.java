@@ -1,7 +1,7 @@
 package com.emc.mongoose.run.scenario;
 //
 import com.emc.mongoose.common.concurrent.GroupThreadFactory;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 //
@@ -48,7 +48,7 @@ implements Runnable {
 	//
 	private volatile boolean interrupted;
 	//
-	public Chain(final RunTimeConfig rtConfig) {
+	public Chain(final BasicConfig rtConfig) {
 		this(
 			rtConfig,
 			rtConfig.getLoadLimitTimeValue(), rtConfig.getLoadLimitTimeUnit(),
@@ -58,7 +58,7 @@ implements Runnable {
 	//
 	@SuppressWarnings("unchecked")
 	public Chain(
-		final RunTimeConfig rtConfig, final long timeOut, final TimeUnit timeUnit,
+		final BasicConfig rtConfig, final long timeOut, final TimeUnit timeUnit,
 		final String[] loadTypeSeq, final boolean isParallel
 	) {
 		this.timeOut = timeOut > 0 ? timeOut : Long.MAX_VALUE;
@@ -230,8 +230,8 @@ implements Runnable {
 	}
 	//
 	public static void main(final String... args) {
-		RunTimeConfig.initContext();
-		final RunTimeConfig runTimeConfig = RunTimeConfig.getContext();
+		BasicConfig.initContext();
+		final BasicConfig runTimeConfig = BasicConfig.getContext();
 		//
 		LOG.info(Markers.MSG, runTimeConfig);
 		//

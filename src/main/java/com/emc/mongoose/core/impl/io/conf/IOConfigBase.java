@@ -1,6 +1,6 @@
 package com.emc.mongoose.core.impl.io.conf;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.Markers;
 //
 import com.emc.mongoose.core.api.item.container.Container;
@@ -34,20 +34,20 @@ implements IOConfig<T, C> {
 	protected C container = null;
 	protected ContentSource contentSrc;
 	protected volatile boolean verifyContentFlag;
-	protected volatile RunTimeConfig runTimeConfig;
+	protected volatile BasicConfig appConfig;
 	protected volatile String nameSpace, namePrefix = null;
 	protected int buffSize;
 	protected int reqSleepMilliSec;
 	//
 	protected IOConfigBase() {
-		runTimeConfig = RunTimeConfig.getContext();
+		appConfig = BasicConfig.getContext();
 		loadType = IOTask.Type.CREATE;
 		contentSrc = ContentSourceBase.getDefault();
-		verifyContentFlag = runTimeConfig.getReadVerifyContent();
-		nameSpace = runTimeConfig.getStorageNameSpace();
-		namePrefix = runTimeConfig.getNamePrefix();
-		buffSize = (int) runTimeConfig.getIOBufferSizeMin();
-		reqSleepMilliSec = runTimeConfig.getLoadLimitReqSleepMilliSec();
+		verifyContentFlag = appConfig.getReadVerifyContent();
+		nameSpace = appConfig.getStorageNameSpace();
+		namePrefix = appConfig.getNamePrefix();
+		buffSize = (int) appConfig.getIOBufferSizeMin();
+		reqSleepMilliSec = appConfig.getLoadLimitReqSleepMilliSec();
 	}
 	//
 	protected IOConfigBase(final IOConfigBase<T, C> ioConf2Clone) {
@@ -182,14 +182,13 @@ implements IOConfig<T, C> {
 		return this;
 	}
 	//
-	@Override
-	public IOConfigBase<T, C> setRunTimeConfig(final RunTimeConfig runTimeConfig) {
-		this.runTimeConfig = runTimeConfig;
-		setNameSpace(this.runTimeConfig.getStorageNameSpace());
-		setNamePrefix(this.runTimeConfig.getNamePrefix());
-		setVerifyContentFlag(this.runTimeConfig.getReadVerifyContent());
-		setBuffSize((int) this.runTimeConfig.getIOBufferSizeMin());
-		reqSleepMilliSec = runTimeConfig.getLoadLimitReqSleepMilliSec();
+	public IOConfigBase<T, C> setAppConfig(final BasicConfig appConfig) {
+		this.appConfig = appConfig;
+		setNameSpace(this.appConfig.getStorageNameSpace());
+		setNamePrefix(this.appConfig.getNamePrefix());
+		setVerifyContentFlag(this.appConfig.getReadVerifyContent());
+		setBuffSize((int) this.appConfig.getIOBufferSizeMin());
+		reqSleepMilliSec = appConfig.getLoadLimitReqSleepMilliSec();
 		return this;
 	}
 	//

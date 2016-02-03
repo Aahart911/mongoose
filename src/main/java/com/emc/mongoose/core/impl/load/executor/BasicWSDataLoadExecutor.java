@@ -1,7 +1,7 @@
 package com.emc.mongoose.core.impl.load.executor;
 // mongoose-common.jar
 import com.emc.mongoose.common.conf.Constants;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.io.IOWorker;
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.common.net.http.conn.pool.HttpConnPool;
@@ -84,15 +84,15 @@ implements WSDataLoadExecutor<T> {
 	//
 	@SuppressWarnings("unchecked")
 	public BasicWSDataLoadExecutor(
-		final RunTimeConfig rtConfig, final WSRequestConfig<T, ? extends Container<T>> reqConfig,
+		final BasicConfig rtConfig, final WSRequestConfig<T, ? extends Container<T>> reqConfig,
 		final String[] addrs, final int connCountPerNode, final int threadCount,
 		final ItemSrc<T> itemSrc, final long maxCount,
 		final long sizeMin, final long sizeMax, final float sizeBias,
-		final int manualTaskSleepMicroSecs, final float rateLimit, final int countUpdPerReq
+		final float rateLimit, final int countUpdPerReq
 	) {
 		super(
 			rtConfig, reqConfig, addrs, connCountPerNode, threadCount, itemSrc, maxCount,
-			sizeMin, sizeMax, sizeBias, manualTaskSleepMicroSecs, rateLimit, countUpdPerReq
+			sizeMin, sizeMax, sizeBias, rateLimit, countUpdPerReq
 		);
 		wsReqConfigCopy = (WSRequestConfig<T, Container<T>>) ioConfigCopy;
 		isPipeliningEnabled = wsReqConfigCopy.getPipelining();
@@ -119,7 +119,7 @@ implements WSDataLoadExecutor<T> {
 			}
 		);
 		//
-		final RunTimeConfig thrLocalConfig = RunTimeConfig.getContext();
+		final BasicConfig thrLocalConfig = BasicConfig.getContext();
 		final int buffSize = wsReqConfigCopy.getBuffSize();
 		final long timeOutMs = rtConfig.getLoadLimitTimeUnit().toMillis(
 			rtConfig.getLoadLimitTimeValue()

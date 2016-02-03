@@ -6,7 +6,7 @@ import com.emc.mongoose.core.api.io.conf.IOConfig;
 import com.emc.mongoose.core.api.io.task.IOTask;
 import com.emc.mongoose.core.api.load.executor.LoadExecutor;
 // mongoose-common
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 import java.io.Closeable;
 import java.io.IOException;
@@ -22,7 +22,7 @@ extends Closeable, Cloneable {
 		MSG_TMPL_NOT_SPECIFIED = "\"{}\" parameter is not specified nor in configuration files neither in command line",
 		MSG_TMPL_INVALID_VALUE = "illegal value specified for \"{}\" parameter: {}";
 	//
-	LoadBuilder<T, U> setRunTimeConfig(final RunTimeConfig props)
+	LoadBuilder<T, U> setRunTimeConfig(final BasicConfig props)
 	throws IllegalStateException, RemoteException;
 	//
 	IOConfig<?, ?> getIOConfig()
@@ -33,28 +33,16 @@ extends Closeable, Cloneable {
 	LoadBuilder<T, U> setLoadType(final IOTask.Type loadType)
 	throws IllegalStateException, RemoteException;
 	//
-	LoadBuilder<T, U> setMaxCount(final long maxCount)
+	LoadBuilder<T, U> setThreadCount(final int connCount)
 	throws IllegalArgumentException, RemoteException;
 	//
-	LoadBuilder<T, U> setManualTaskSleepMicroSecs(final int manualTaskSleepMicroSec)
+	LoadBuilder<T, U> setLimitCount(final long maxCount)
 	throws IllegalArgumentException, RemoteException;
 	//
-	LoadBuilder<T, U> setRateLimit(final float rateLimit)
+	LoadBuilder<T, U> setLimitRate(final float rateLimit)
 	throws IllegalArgumentException, RemoteException;
 	//
-	LoadBuilder<T, U> setWorkerCountDefault(final int threadCount)
-	throws RemoteException;
-	//
-	LoadBuilder<T, U> setWorkerCountFor(final int threadCount, final IOTask.Type loadType)
-	throws RemoteException;
-	//
-	LoadBuilder<T, U> setConnPerNodeDefault(final int connCount)
-	throws IllegalArgumentException, RemoteException;
-	//
-	LoadBuilder<T, U> setConnPerNodeFor(final int connCount, final IOTask.Type loadType)
-	throws IllegalArgumentException, RemoteException;
-	//
-	LoadBuilder<T, U> setDataNodeAddrs(final String[] dataNodeAddrs)
+	LoadBuilder<T, U> setNodeAddrs(final String[] nodeAddrs)
 	throws IllegalArgumentException, RemoteException;
 	//
 	LoadBuilder<T, U> setItemSrc(final ItemSrc<T> itemSrc)

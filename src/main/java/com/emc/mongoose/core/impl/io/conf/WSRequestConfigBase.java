@@ -1,7 +1,7 @@
 package com.emc.mongoose.core.impl.io.conf;
 // mongoose-common
 import com.emc.mongoose.common.conf.Constants;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.concurrent.GroupThreadFactory;
 import com.emc.mongoose.common.conf.SizeUtil;
 import com.emc.mongoose.common.date.LowPrecisionDateGenerator;
@@ -103,7 +103,7 @@ implements WSRequestConfig<T, C> {
 	private final Thread clientDaemon;
 	//
 	public static <T extends WSObject, C extends Container<T>> WSRequestConfig<T, C> getInstance() {
-		return newInstanceFor(RunTimeConfig.getContext().getApiName());
+		return newInstanceFor(BasicConfig.getContext().getApiName());
 	}
 	//
 	@SuppressWarnings("unchecked")
@@ -136,8 +136,8 @@ implements WSRequestConfig<T, C> {
 	protected WSRequestConfigBase(final WSRequestConfigBase<T, C> reqConf2Clone)
 	throws NoSuchAlgorithmException {
 		super(reqConf2Clone);
-		signMethod = runTimeConfig.getHttpSignMethod();
-		final Configuration customHeaders = runTimeConfig.getHttpCustomHeaders();
+		signMethod = appConfig.getHttpSignMethod();
+		final Configuration customHeaders = appConfig.getHttpCustomHeaders();
 		if(customHeaders != null) {
 			final Iterator<String> customHeadersIterator = customHeaders.getKeys();
 			if(customHeadersIterator != null) {
@@ -186,25 +186,25 @@ implements WSRequestConfig<T, C> {
 		//
 		final ConnectionConfig connConfig = ConnectionConfig
 			.custom()
-			.setBufferSize((int) runTimeConfig.getIOBufferSizeMin())
+			.setBufferSize((int) appConfig.getIOBufferSizeMin())
 			.build();
-		final long timeOutMs = runTimeConfig.getLoadLimitTimeUnit().toMillis(
-			runTimeConfig.getLoadLimitTimeValue()
+		final long timeOutMs = appConfig.getLoadLimitTimeUnit().toMillis(
+			appConfig.getLoadLimitTimeValue()
 		);
 		final IOReactorConfig.Builder ioReactorConfigBuilder = IOReactorConfig
 			.custom()
 			.setIoThreadCount(1)
-			.setBacklogSize((int) runTimeConfig.getSocketBindBackLogSize())
-			.setInterestOpQueued(runTimeConfig.getSocketInterestOpQueued())
-			.setSelectInterval(runTimeConfig.getSocketSelectInterval())
-			.setShutdownGracePeriod(runTimeConfig.getSocketTimeOut())
-			.setSoKeepAlive(runTimeConfig.getSocketKeepAliveFlag())
-			.setSoLinger(runTimeConfig.getSocketLinger())
-			.setSoReuseAddress(runTimeConfig.getSocketReuseAddrFlag())
-			.setSoTimeout(runTimeConfig.getSocketTimeOut())
-			.setTcpNoDelay(runTimeConfig.getSocketTCPNoDelayFlag())
-			.setRcvBufSize((int) runTimeConfig.getIOBufferSizeMin())
-			.setSndBufSize((int) runTimeConfig.getIOBufferSizeMin())
+			.setBacklogSize((int) appConfig.getSocketBindBackLogSize())
+			.setInterestOpQueued(appConfig.getSocketInterestOpQueued())
+			.setSelectInterval(appConfig.getSocketSelectInterval())
+			.setShutdownGracePeriod(appConfig.getSocketTimeOut())
+			.setSoKeepAlive(appConfig.getSocketKeepAliveFlag())
+			.setSoLinger(appConfig.getSocketLinger())
+			.setSoReuseAddress(appConfig.getSocketReuseAddrFlag())
+			.setSoTimeout(appConfig.getSocketTimeOut())
+			.setTcpNoDelay(appConfig.getSocketTCPNoDelayFlag())
+			.setRcvBufSize((int) appConfig.getIOBufferSizeMin())
+			.setSndBufSize((int) appConfig.getIOBufferSizeMin())
 			.setConnectTimeout(
 				timeOutMs > 0 && timeOutMs < Integer.MAX_VALUE ? (int) timeOutMs : Integer.MAX_VALUE
 			);
@@ -384,41 +384,41 @@ implements WSRequestConfig<T, C> {
 	}
 	//
 	@Override
-	public WSRequestConfigBase<T, C> setRunTimeConfig(final RunTimeConfig runTimeConfig) {
+	public WSRequestConfigBase<T, C> setAppConfig(final BasicConfig appConfig) {
 		//
 		try {
-			setScheme(this.runTimeConfig.getStorageProto());
+			setScheme(this.appConfig.getStorageProto());
 		} catch(final NoSuchElementException e) {
-			LOG.error(Markers.ERR, MSG_TMPL_NOT_SPECIFIED, RunTimeConfig.KEY_STORAGE_SCHEME);
+			LOG.error(Markers.ERR, MSG_TMPL_NOT_SPECIFIED, BasicConfig.KEY_STORAGE_SCHEME);
 		}
 		//
 		try {
-			setNameSpace(this.runTimeConfig.getStorageNameSpace());
+			setNameSpace(this.appConfig.getStorageNameSpace());
 		} catch(final NoSuchElementException e) {
-			LOG.debug(Markers.ERR, MSG_TMPL_NOT_SPECIFIED, RunTimeConfig.KEY_STORAGE_NAMESPACE);
+			LOG.debug(Markers.ERR, MSG_TMPL_NOT_SPECIFIED, BasicConfig.KEY_STORAGE_NAMESPACE);
 		} catch(final IllegalStateException e) {
 			LOG.debug(Markers.ERR, "Failed to set the namespace", e);
 		}
 		//
 		try {
-			setFileAccessEnabled(runTimeConfig.getDataFileAccessEnabled());
+			setFileAccessEnabled(appConfig.getDataFileAccessEnabled());
 		} catch(final NoSuchElementException e) {
-			LOG.debug(Markers.ERR, MSG_TMPL_NOT_SPECIFIED, RunTimeConfig.KEY_DATA_FS_ACCESS);
+			LOG.debug(Markers.ERR, MSG_TMPL_NOT_SPECIFIED, BasicConfig.KEY_DATA_FS_ACCESS);
 		}
 		//
 		try {
-			setVersioning(runTimeConfig.getDataVersioningEnabled());
+			setVersioning(appConfig.getDataVersioningEnabled());
 		} catch(final NoSuchElementException e) {
-			LOG.debug(Markers.ERR, MSG_TMPL_NOT_SPECIFIED, RunTimeConfig.KEY_DATA_FS_ACCESS);
+			LOG.debug(Markers.ERR, MSG_TMPL_NOT_SPECIFIED, BasicConfig.KEY_DATA_FS_ACCESS);
 		}
 		//
 		try {
-			setPipelining(runTimeConfig.getHttpPipeliningFlag());
+			setPipelining(appConfig.getHttpPipeliningFlag());
 		} catch(final NoSuchElementException e) {
-			LOG.debug(Markers.ERR, MSG_TMPL_NOT_SPECIFIED, RunTimeConfig.KEY_HTTP_PIPELINING);
+			LOG.debug(Markers.ERR, MSG_TMPL_NOT_SPECIFIED, BasicConfig.KEY_HTTP_PIPELINING);
 		}
 		//
-		super.setRunTimeConfig(runTimeConfig);
+		super.setAppConfig(appConfig);
 		//
 		return this;
 	}
@@ -596,7 +596,7 @@ implements WSRequestConfig<T, C> {
 			for(int i = 0; i < rangeCount; i ++) {
 				if(dataItem.isCurrLayerRangeUpdating(i)) {
 					if(sb.length() > prefixLen) {
-						sb.append(RunTimeConfig.LIST_SEP);
+						sb.append(BasicConfig.LIST_SEP);
 					}
 					nextRangeOffset = getRangeOffset(i);
 					sb
@@ -608,7 +608,7 @@ implements WSRequestConfig<T, C> {
 			for(int i = 0; i < rangeCount; i ++) {
 				if(dataItem.isNextLayerRangeUpdating(i)) {
 					if(sb.length() > prefixLen) {
-						sb.append(RunTimeConfig.LIST_SEP);
+						sb.append(BasicConfig.LIST_SEP);
 					}
 					nextRangeOffset = getRangeOffset(i);
 					sb
@@ -747,7 +747,7 @@ implements WSRequestConfig<T, C> {
 				final String t[] = tgtAddr.split(":");
 				try {
 					tgtHost = new HttpHost(
-						t[0], Integer.parseInt(t[1]), runTimeConfig.getStorageProto()
+						t[0], Integer.parseInt(t[1]), appConfig.getStorageProto()
 					);
 				} catch(final Exception e) {
 					LogUtil.exception(
@@ -756,8 +756,8 @@ implements WSRequestConfig<T, C> {
 				}
 			} else {
 				tgtHost = new HttpHost(
-					tgtAddr, runTimeConfig.getApiTypePort(runTimeConfig.getApiName()),
-					runTimeConfig.getStorageProto()
+					tgtAddr, appConfig.getApiTypePort(appConfig.getApiName()),
+					appConfig.getStorageProto()
 				);
 			}
 		} else {

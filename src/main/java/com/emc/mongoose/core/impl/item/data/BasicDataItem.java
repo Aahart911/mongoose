@@ -1,6 +1,6 @@
 package com.emc.mongoose.core.impl.item.data;
 // mongoose-common.jar
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 // mongoose-core-api.jar
 import com.emc.mongoose.core.api.item.data.DataCorruptionException;
 import com.emc.mongoose.core.api.item.data.DataItem;
@@ -51,7 +51,7 @@ implements DataItem {
 	//
 	public BasicDataItem(final String metaInfo, final ContentSource contentSrc) {
 		this(contentSrc);
-		final String tokens[] = metaInfo.split(RunTimeConfig.LIST_SEP, 3);
+		final String tokens[] = metaInfo.split(BasicConfig.LIST_SEP, 3);
 		if(tokens.length == 3) {
 			name = tokens[0];
 			try {
@@ -212,8 +212,8 @@ implements DataItem {
 			strBuilder.setLength(0); // reset
 		}
 		return strBuilder
-			.append(name).append(RunTimeConfig.LIST_SEP)
-			.append(Long.toHexString(offset)).append(RunTimeConfig.LIST_SEP)
+			.append(name).append(BasicConfig.LIST_SEP)
+			.append(Long.toHexString(offset)).append(BasicConfig.LIST_SEP)
 			.append(size).toString();
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////

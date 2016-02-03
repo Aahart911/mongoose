@@ -1,6 +1,6 @@
 package com.emc.mongoose.server.impl.load.executor;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.common.net.Service;
@@ -35,14 +35,17 @@ implements FileLoadSvc<T> {
 	private final static Logger LOG = LogManager.getLogger();
 	//
 	public BasicFileLoadSvc(
-		final RunTimeConfig rtConfig,
+		final BasicConfig rtConfig,
 		final FileIOConfig<T, ? extends Directory<T>> ioConfig,
 		final String[] addrs, final int connCountPerNode, final int threadCount,
 		final ItemSrc<T> itemSrc, final long maxCount,
 		final long sizeMin, final long sizeMax, final float sizeBias,
-		final int manualTaskSleepMicroSecs, final float rateLimit, final int countUpdPerReq
+		final float rateLimit, final int countUpdPerReq
 	) throws ClassCastException {
-		super(rtConfig, ioConfig, addrs, connCountPerNode, threadCount, itemSrc, maxCount, sizeMin, sizeMax, sizeBias, manualTaskSleepMicroSecs, rateLimit, countUpdPerReq);
+		super(
+			rtConfig, ioConfig, addrs, connCountPerNode, threadCount, itemSrc, maxCount,
+			sizeMin, sizeMax, sizeBias, rateLimit, countUpdPerReq
+		);
 	}
 	//
 	@Override

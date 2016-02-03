@@ -28,7 +28,7 @@ public class JsonConfigLoader {
 	//
 	private static final Logger LOG = LogManager.getLogger();
 	//
-	private final RunTimeConfig rtConfig;
+	private final BasicConfig rtConfig;
 	private final Set<String> mongooseKeys;
 	//
 	public enum JsonConfigLoaderActions {
@@ -39,7 +39,7 @@ public class JsonConfigLoader {
 	}
 	private JsonConfigLoaderActions action = JsonConfigLoaderActions.LOAD;
 	//
-	public JsonConfigLoader(final RunTimeConfig rtConfig) {
+	public JsonConfigLoader(final BasicConfig rtConfig) {
 		this.rtConfig = rtConfig;
 		final Set<String> keys = rtConfig.getMongooseKeys();
 		mongooseKeys = keys.isEmpty() ? keys : new HashSet<String>();
@@ -56,9 +56,9 @@ public class JsonConfigLoader {
 				rootNode = jsonMapper.readTree(cfgFile);
 			} else {
 				final ClassLoader cl = JsonConfigLoader.class.getClassLoader();
-				final InputStream bundledConf = cl.getResourceAsStream(RunTimeConfig.FNAME_CONF);
+				final InputStream bundledConf = cl.getResourceAsStream(BasicConfig.FNAME_CONF);
 				LOG.debug(
-					Markers.MSG, "Load the bundled config", cl.getResource(RunTimeConfig.FNAME_CONF)
+					Markers.MSG, "Load the bundled config", cl.getResource(BasicConfig.FNAME_CONF)
 				);
 				rootNode = jsonMapper.readTree(bundledConf);
 			}
@@ -93,7 +93,7 @@ public class JsonConfigLoader {
 			if(!jsonNode.get(jsonField).fieldNames().hasNext()) {
 				if(action.equals(JsonConfigLoaderActions.UPDATE)) {
 					final Object value = rtConfig.getProperty(propertyName);
-					if(!propertyName.startsWith(RunTimeConfig.PREFIX_KEY_ALIASING)) {
+					if(!propertyName.startsWith(BasicConfig.PREFIX_KEY_ALIASING)) {
 						LOG.trace(
 							Markers.MSG, "Update property: \"{}\" = {}", propertyName, value
 						);
@@ -103,7 +103,7 @@ public class JsonConfigLoader {
 				} else {
 					// load configuration from mongoose.json
 					final JsonNode nodeValue = jsonNode.get(jsonField);
-					if(!propertyName.startsWith(RunTimeConfig.PREFIX_KEY_ALIASING)) {
+					if(!propertyName.startsWith(BasicConfig.PREFIX_KEY_ALIASING)) {
 						LOG.trace(
 							Markers.MSG, "Read property: \"{}\" = {}", propertyName, nodeValue
 						);

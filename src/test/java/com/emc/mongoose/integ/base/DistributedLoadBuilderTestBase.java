@@ -2,7 +2,7 @@ package com.emc.mongoose.integ.base;
 //
 import com.emc.mongoose.client.api.load.builder.LoadBuilderClient;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 //
 //
@@ -23,7 +23,7 @@ extends DistributedTestBase {
 	throws Exception {
 		DistributedTestBase.setUpClass();
 		LOAD_BUILDER_CLIENT = (LoadBuilderClient) LoadBuilderFactory
-			.getInstance(RunTimeConfig.getContext());
+			.getInstance(BasicConfig.getContext());
 	}
 	//
 	@AfterClass

@@ -1,6 +1,6 @@
 package com.emc.mongoose.webui.expressions;
 
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.conf.TimeUtil;
 
 import java.util.Arrays;
@@ -9,9 +9,9 @@ import java.util.Arrays;
  */
 public class Functions {
 
-	public static String getString(final RunTimeConfig runTimeConfig, final String key) {
-		String[] stringArray = runTimeConfig.getStringArray(key);
-		if (runTimeConfig.getStringArray(key).length > 1) {
+	public static String getString(final BasicConfig appConfig, final String key) {
+		String[] stringArray = appConfig.getStringArray(key);
+		if (appConfig.getStringArray(key).length > 1) {
 			return convertArrayToString(stringArray);
 		}
 		if (stringArray.length == 0) {
@@ -20,13 +20,13 @@ public class Functions {
 		return stringArray[0];
 	}
 
-	public static String getTimeValue(final RunTimeConfig runTimeConfig, final String key) {
-		final String rawValue = runTimeConfig.getString(key);
+	public static String getTimeValue(final BasicConfig appConfig, final String key) {
+		final String rawValue = appConfig.getString(key);
 		return Long.toString(TimeUtil.getTimeValue(rawValue));
 	}
 
-	public static String getTimeUnit(final RunTimeConfig runTimeConfig, final String key) {
-		final String rawValue = runTimeConfig.getString(key);
+	public static String getTimeUnit(final BasicConfig appConfig, final String key) {
+		final String rawValue = appConfig.getString(key);
 		return TimeUtil.getTimeUnit(rawValue).toString().toLowerCase();
 	}
 

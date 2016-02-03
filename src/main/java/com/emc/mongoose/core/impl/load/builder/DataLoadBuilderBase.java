@@ -1,7 +1,7 @@
 package com.emc.mongoose.core.impl.load.builder;
 //
 import com.emc.mongoose.common.conf.Constants;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.conf.SizeUtil;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
@@ -42,7 +42,7 @@ implements DataLoadBuilder<T, U> {
 	protected int updatesPerItem;
 	protected float objSizeBias;
 	//
-	public DataLoadBuilderBase(final RunTimeConfig rtConfig)
+	public DataLoadBuilderBase(final BasicConfig rtConfig)
 	throws RemoteException {
 		super(rtConfig);
 	}
@@ -84,7 +84,7 @@ implements DataLoadBuilder<T, U> {
 	private ItemSrc<T> getContainerItemSrc()
 	throws CloneNotSupportedException {
 		return (ItemSrc<T>) ((IOConfig) ioConfig.clone()).getContainerListInput(
-			maxCount, storageNodeAddrs == null ? null : storageNodeAddrs[0]
+			limitCount, storageNodeAddrs == null ? null : storageNodeAddrs[0]
 		);
 	}
 	//
@@ -118,11 +118,11 @@ implements DataLoadBuilder<T, U> {
 	}
 	//
 	@Override
-	public DataLoadBuilder<T, U> setRunTimeConfig(final RunTimeConfig rtConfig)
+	public DataLoadBuilder<T, U> setRunTimeConfig(final BasicConfig rtConfig)
 	throws IllegalStateException, RemoteException {
 		super.setRunTimeConfig(rtConfig);
 		//
-		String paramName = RunTimeConfig.KEY_DATA_SIZE_MIN;
+		String paramName = BasicConfig.KEY_DATA_SIZE_MIN;
 		try {
 			setMinObjSize(rtConfig.getDataSizeMin());
 		} catch(final NoSuchElementException e) {
@@ -131,7 +131,7 @@ implements DataLoadBuilder<T, U> {
 			LOG.error(Markers.ERR, MSG_TMPL_INVALID_VALUE, paramName, e.getMessage());
 		}
 		//
-		paramName = RunTimeConfig.KEY_DATA_SIZE_MAX;
+		paramName = BasicConfig.KEY_DATA_SIZE_MAX;
 		try {
 			setMaxObjSize(rtConfig.getDataSizeMax());
 		} catch(final NoSuchElementException e) {
@@ -140,7 +140,7 @@ implements DataLoadBuilder<T, U> {
 			LOG.error(Markers.ERR, MSG_TMPL_INVALID_VALUE, paramName, e.getMessage());
 		}
 		//
-		paramName = RunTimeConfig.KEY_DATA_SIZE_BIAS;
+		paramName = BasicConfig.KEY_DATA_SIZE_BIAS;
 		try {
 			setObjSizeBias(rtConfig.getDataSizeBias());
 		} catch(final NoSuchElementException e) {
@@ -149,7 +149,7 @@ implements DataLoadBuilder<T, U> {
 			LOG.error(Markers.ERR, MSG_TMPL_INVALID_VALUE, paramName, e.getMessage());
 		}
 		//
-		paramName = RunTimeConfig.KEY_LOAD_UPDATE_PER_ITEM;
+		paramName = BasicConfig.KEY_LOAD_UPDATE_PER_ITEM;
 		try {
 			setUpdatesPerItem(rtConfig.getInt(paramName));
 		} catch(final NoSuchElementException e) {
@@ -182,7 +182,7 @@ implements DataLoadBuilder<T, U> {
 		if(itemSrc instanceof DataItemFileSrc) {
 			final DataItemFileSrc<T> fileInput = (DataItemFileSrc<T>) itemSrc;
 			final long approxDataItemsSize = fileInput.getApproxDataItemsSize(
-					RunTimeConfig.getContext().getBatchSize()
+					BasicConfig.getContext().getBatchSize()
 			);
 			ioConfig.setBuffSize(
 				approxDataItemsSize < Constants.BUFF_SIZE_LO ?

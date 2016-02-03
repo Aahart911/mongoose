@@ -1,6 +1,6 @@
 package com.emc.mongoose.util.client.impl;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 import com.emc.mongoose.core.api.item.base.Item;
 import com.emc.mongoose.core.api.item.base.ItemSrc;
@@ -23,11 +23,11 @@ implements StorageClient<T> {
 	//
 	protected final static int DEFAULT_CONN_PER_NODE_COUNT = 1;
 	//
-	protected RunTimeConfig rtConfig;
+	protected BasicConfig rtConfig;
 	protected LoadBuilder<T, LoadExecutor<T>> loadBuilder;
 	//
 	public BasicStorageClient(
-		final RunTimeConfig rtConfig, final LoadBuilder<T, LoadExecutor<T>> loadBuilder
+		final BasicConfig rtConfig, final LoadBuilder<T, LoadExecutor<T>> loadBuilder
 	) {
 		this.rtConfig = rtConfig;
 		this.loadBuilder = loadBuilder;
@@ -80,8 +80,8 @@ implements StorageClient<T> {
 			final LoadExecutor<T> loadJobExecutor = loadBuilder
 				.setLoadType(IOTask.Type.CREATE)
 				.useNewItemSrc().setItemSrc(src)
-				.setMaxCount(maxCount)
-				.setConnPerNodeFor(connPerNodeCount, IOTask.Type.CREATE)
+				.setLimitCount(maxCount)
+				.setThreadCount(connPerNodeCount)
 				.build()
 		) {
 			return executeLoadJob(loadJobExecutor, dst);
@@ -108,8 +108,8 @@ implements StorageClient<T> {
 			final LoadExecutor<T> loadJobExecutor = loadBuilder
 				.setLoadType(IOTask.Type.READ)
 				.setItemSrc(src)
-				.setMaxCount(maxCount)
-				.setConnPerNodeFor(connPerNodeCount, IOTask.Type.READ)
+				.setLimitCount(maxCount)
+				.setThreadCount(connPerNodeCount)
 				.build()
 		) {
 			return executeLoadJob(loadJobExecutor, dst);
@@ -134,8 +134,8 @@ implements StorageClient<T> {
 			final LoadExecutor<T> loadJobExecutor = loadBuilder
 				.setLoadType(IOTask.Type.DELETE)
 				.setItemSrc(src)
-				.setMaxCount(maxCount)
-				.setConnPerNodeFor(connPerNodeCount, IOTask.Type.DELETE)
+				.setLimitCount(maxCount)
+				.setThreadCount(connPerNodeCount)
 				.build()
 		) {
 			return executeLoadJob(loadJobExecutor, dst);
@@ -160,8 +160,8 @@ implements StorageClient<T> {
 			final LoadExecutor<T> loadJobExecutor = loadBuilder
 				.setLoadType(IOTask.Type.UPDATE)
 				.setItemSrc(src)
-				.setMaxCount(maxCount)
-				.setConnPerNodeFor(connPerNodeCount, IOTask.Type.UPDATE)
+				.setLimitCount(maxCount)
+				.setThreadCount(connPerNodeCount)
 				.build()
 		) {
 			return executeLoadJob(loadJobExecutor, dst);
@@ -198,8 +198,8 @@ implements StorageClient<T> {
 			final LoadExecutor<T> loadJobExecutor = loadBuilder
 				.setItemSrc(src)
 				.setLoadType(IOTask.Type.APPEND)
-				.setMaxCount(maxCount)
-				.setConnPerNodeFor(connPerNodeCount, IOTask.Type.APPEND)
+				.setLimitCount(maxCount)
+				.setThreadCount(connPerNodeCount)
 				.build()
 		) {
 			return executeLoadJob(loadJobExecutor, dst);

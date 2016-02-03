@@ -1,6 +1,6 @@
 package com.emc.mongoose.storage.mock.impl.web.request;
 // mongoose-common.jar
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 // mongoose-storage-adapter-atmos.jar
 import com.emc.mongoose.common.log.LogUtil;
@@ -78,8 +78,8 @@ extends WSRequestHandlerBase<T> {
 				KEY_VERSIONING + ">versions)?"
 		);
 	//
-	public AtmosRequestHandler(final RunTimeConfig runTimeConfig, final WSMock<T> sharedStorage) {
-		super(runTimeConfig, sharedStorage);
+	public AtmosRequestHandler(final BasicConfig appConfig, final WSMock<T> sharedStorage) {
+		super(appConfig, sharedStorage);
 	}
 	//
 	@Override

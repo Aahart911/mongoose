@@ -1,6 +1,6 @@
 package com.emc.mongoose.integ.feature.containers;
 import com.emc.mongoose.common.conf.Constants;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.common.log.appenders.RunIdFileManager;
 import com.emc.mongoose.integ.base.LoggingTestBase;
@@ -42,33 +42,33 @@ extends WSMockTestBase {
 	@BeforeClass
 	public static void setUpClass()
 	throws Exception {
-		System.setProperty(RunTimeConfig.KEY_RUN_ID, RUN_ID + "Write");
-		System.setProperty(RunTimeConfig.KEY_ITEM_CLASS, "container");
-		System.setProperty(RunTimeConfig.KEY_STORAGE_MOCK_CONTAINER_CAPACITY, "1");
+		System.setProperty(BasicConfig.KEY_RUN_ID, RUN_ID + "Write");
+		System.setProperty(BasicConfig.KEY_ITEM_CLASS, "container");
+		System.setProperty(BasicConfig.KEY_STORAGE_MOCK_CONTAINER_CAPACITY, "1");
 		WSMockTestBase.setUpClass();
-		final RunTimeConfig rtConfig = RunTimeConfig.getContext();
-		rtConfig.set(RunTimeConfig.KEY_SCENARIO_SINGLE_LOAD, TestConstants.LOAD_CREATE);
-		rtConfig.set(RunTimeConfig.KEY_LOAD_LIMIT_COUNT, Integer.toString(LIMIT_COUNT));
-		RunTimeConfig.setContext(rtConfig);
+		final BasicConfig rtConfig = BasicConfig.getContext();
+		rtConfig.set(BasicConfig.KEY_SCENARIO_SINGLE_LOAD, TestConstants.LOAD_CREATE);
+		rtConfig.set(BasicConfig.KEY_LOAD_LIMIT_COUNT, Integer.toString(LIMIT_COUNT));
+		BasicConfig.setContext(rtConfig);
 		//
 		final Logger logger = LogManager.getLogger();
-		logger.info(Markers.MSG, RunTimeConfig.getContext().toString());
+		logger.info(Markers.MSG, BasicConfig.getContext().toString());
 		//
 		new ScenarioRunner().run();
 		//  Wait for "Scenario end" message
 		TimeUnit.SECONDS.sleep(1);
 		RunIdFileManager.flushAll();
 		//
-		System.setProperty(RunTimeConfig.KEY_RUN_ID, RUN_ID);
-		rtConfig.set(RunTimeConfig.KEY_RUN_ID, RUN_ID);
+		System.setProperty(BasicConfig.KEY_RUN_ID, RUN_ID);
+		rtConfig.set(BasicConfig.KEY_RUN_ID, RUN_ID);
 		LoggingTestBase.setUpClass();
-		rtConfig.set(RunTimeConfig.KEY_SCENARIO_SINGLE_LOAD, TestConstants.LOAD_READ);
+		rtConfig.set(BasicConfig.KEY_SCENARIO_SINGLE_LOAD, TestConstants.LOAD_READ);
 		rtConfig.set(
-			RunTimeConfig.KEY_ITEM_SRC_FILE,
+			BasicConfig.KEY_ITEM_SRC_FILE,
 			LogValidator.getItemsListFile(RUN_ID + "Write").getPath()
 		);
-		RunTimeConfig.setContext(rtConfig);
-		logger.info(Markers.MSG, RunTimeConfig.getContext().toString());
+		BasicConfig.setContext(rtConfig);
+		logger.info(Markers.MSG, BasicConfig.getContext().toString());
 		//
 		try(
 			final BufferingOutputStream stdOutStream = StdOutUtil
@@ -88,7 +88,7 @@ extends WSMockTestBase {
 	public  static void tearDownClass()
 	throws Exception {
 		WSMockTestBase.tearDownClass();
-		System.setProperty(RunTimeConfig.KEY_STORAGE_MOCK_CONTAINER_CAPACITY, "1000000");
+		System.setProperty(BasicConfig.KEY_STORAGE_MOCK_CONTAINER_CAPACITY, "1000000");
 	}
 
 	@Test
@@ -130,7 +130,7 @@ extends WSMockTestBase {
 	@Test
 	public void shouldCustomValuesDisplayedCorrectlyInConfigurationTable()
 	throws Exception {
-		final String configTable = RunTimeConfig.getContext().toString();
+		final String configTable = BasicConfig.getContext().toString();
 		final Set<String> params = new HashSet<>();
 		//  skip table header
 		int start = 126;
@@ -140,25 +140,25 @@ extends WSMockTestBase {
 			start += lineOffset;
 		}
 		for (final String confParam : params) {
-			if (confParam.contains(RunTimeConfig.KEY_LOAD_LIMIT_COUNT)) {
+			if (confParam.contains(BasicConfig.KEY_LOAD_LIMIT_COUNT)) {
 				Assert.assertTrue(
 					"Information about limit count in configuration table is wrong",
 					confParam.contains(String.valueOf(LIMIT_COUNT))
 				);
 			}
-			if (confParam.contains(RunTimeConfig.KEY_STORAGE_ADDRS)) {
+			if (confParam.contains(BasicConfig.KEY_STORAGE_ADDRS)) {
 				Assert.assertTrue(
 					"Information about storage address in configuration table is wrong",
 					confParam.contains("127.0.0.1")
 				);
 			}
-			if (confParam.contains(RunTimeConfig.KEY_RUN_MODE)) {
+			if (confParam.contains(BasicConfig.KEY_RUN_MODE)) {
 				Assert.assertTrue(
 					"Information about run mode in configuration table is wrong",
 					confParam.contains(Constants.RUN_MODE_STANDALONE)
 				);
 			}
-			if (confParam.contains(RunTimeConfig.KEY_RUN_ID)) {
+			if (confParam.contains(BasicConfig.KEY_RUN_ID)) {
 				if (RUN_ID.length() >= 64) {
 					Assert.assertTrue(
 						"Information about run id in configuration table is wrong",
@@ -171,13 +171,13 @@ extends WSMockTestBase {
 					);
 				}
 			}
-			if (confParam.contains(RunTimeConfig.KEY_LOAD_LIMIT_TIME)) {
+			if (confParam.contains(BasicConfig.KEY_LOAD_LIMIT_TIME)) {
 				Assert.assertTrue(
 					"Information about limit time in configuration table is wrong",
 					confParam.contains("0")
 				);
 			}
-			if (confParam.contains(RunTimeConfig.KEY_SCENARIO_NAME)) {
+			if (confParam.contains(BasicConfig.KEY_SCENARIO_NAME)) {
 				Assert.assertTrue(
 					"Information about scenario name in configuration table is wrong",
 					confParam.contains(TestConstants.SCENARIO_SINGLE)

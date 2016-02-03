@@ -1,7 +1,7 @@
 package com.emc.mongoose.server.impl.load.builder;
 //
 import com.emc.mongoose.common.conf.Constants;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.conf.SizeUtil;
 import com.emc.mongoose.common.exceptions.DuplicateSvcNameException;
 import com.emc.mongoose.common.log.LogUtil;
@@ -39,7 +39,7 @@ implements FileLoadBuilderSvc<T, U> {
 	//
 	private String name = getClass().getName();
 	//
-	public BasicFileLoadBuilderSvc(final RunTimeConfig rtConfig)
+	public BasicFileLoadBuilderSvc(final BasicConfig rtConfig)
 	throws RemoteException {
 		super(rtConfig);
 	}
@@ -76,9 +76,9 @@ implements FileLoadBuilderSvc<T, U> {
 			throw new IllegalStateException("Should specify request builder instance before instancing");
 		}
 		//
-		final RunTimeConfig rtConfig = RunTimeConfig.getContext();
+		final BasicConfig rtConfig = BasicConfig.getContext();
 		// the statement below fixes hi-level API distributed mode usage and tests
-		rtConfig.setProperty(RunTimeConfig.KEY_RUN_MODE, Constants.RUN_MODE_SERVER);
+		rtConfig.setProperty(BasicConfig.KEY_RUN_MODE, Constants.RUN_MODE_SERVER);
 		if(minObjSize > maxObjSize) {
 			throw new IllegalStateException(
 				String.format(
@@ -88,14 +88,10 @@ implements FileLoadBuilderSvc<T, U> {
 			);
 		}
 		//
-		final IOTask.Type loadType = ioConfig.getLoadType();
-		final int connPerNode = loadTypeConnPerNode.get(loadType);
-		//
 		return (U) new BasicFileLoadSvc<>(
-			rtConfig, (FileIOConfig) ioConfig, storageNodeAddrs, connPerNode, connPerNode,
+			rtConfig, (FileIOConfig) ioConfig, storageNodeAddrs, threadCount, threadCount,
 			itemSrc == null ? getDefaultItemSource() : itemSrc,
-			maxCount, minObjSize, maxObjSize, objSizeBias,
-			manualTaskSleepMicroSecs, rateLimit, updatesPerItem
+			limitCount, minObjSize, maxObjSize, objSizeBias, limitRate, updatesPerItem
 		);
 	}
 	//

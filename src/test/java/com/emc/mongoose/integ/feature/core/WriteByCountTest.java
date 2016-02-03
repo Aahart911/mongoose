@@ -1,6 +1,6 @@
 package com.emc.mongoose.integ.feature.core;
 
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.conf.SizeUtil;
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.common.log.appenders.RunIdFileManager;
@@ -56,20 +56,20 @@ extends WSMockTestBase {
 	@BeforeClass
 	public static void setUpClass()
 	throws Exception {
-		System.setProperty(RunTimeConfig.KEY_RUN_ID, RUN_ID);
+		System.setProperty(BasicConfig.KEY_RUN_ID, RUN_ID);
 		WSMockTestBase.setUpClass();
 		//
-		final RunTimeConfig rtConfig = RunTimeConfig.getContext();
-		rtConfig.set(RunTimeConfig.KEY_LOAD_LIMIT_COUNT, Integer.toString(LIMIT_COUNT));
-		rtConfig.set(RunTimeConfig.KEY_DATA_SIZE_MAX, DATA_SIZE);
-		rtConfig.set(RunTimeConfig.KEY_DATA_SIZE_MIN, DATA_SIZE);
-		rtConfig.set(RunTimeConfig.KEY_LOAD_LIMIT_TIME, LIMIT_TIME);
-		rtConfig.set(RunTimeConfig.KEY_CREATE_CONNS, Integer.toString(LOAD_THREADS));
-		rtConfig.set(RunTimeConfig.KEY_API_S3_BUCKET, TestConstants.BUCKET_NAME);
-		RunTimeConfig.setContext(rtConfig);
+		final BasicConfig rtConfig = BasicConfig.getContext();
+		rtConfig.set(BasicConfig.KEY_LOAD_LIMIT_COUNT, Integer.toString(LIMIT_COUNT));
+		rtConfig.set(BasicConfig.KEY_DATA_SIZE_MAX, DATA_SIZE);
+		rtConfig.set(BasicConfig.KEY_DATA_SIZE_MIN, DATA_SIZE);
+		rtConfig.set(BasicConfig.KEY_LOAD_LIMIT_TIME, LIMIT_TIME);
+		rtConfig.set(BasicConfig.KEY_CREATE_CONNS, Integer.toString(LOAD_THREADS));
+		rtConfig.set(BasicConfig.KEY_API_S3_BUCKET, TestConstants.BUCKET_NAME);
+		BasicConfig.setContext(rtConfig);
 		//
 		final Logger logger = LogManager.getLogger();
-		logger.info(Markers.MSG, RunTimeConfig.getContext().toString());
+		logger.info(Markers.MSG, BasicConfig.getContext().toString());
 		//
 		try (final BufferingOutputStream
 				 stdOutStream =	StdOutUtil.getStdOutBufferingStream()

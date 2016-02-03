@@ -1,6 +1,6 @@
 package com.emc.mongoose.integ.feature.chain;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.common.log.appenders.RunIdFileManager;
@@ -46,16 +46,16 @@ extends DistributedLoadBuilderTestBase {
 	public static void setUpClass()
 	throws Exception {
 		System.setProperty(
-			RunTimeConfig.KEY_RUN_ID, SimultaneousDistributedLoadTest.class.getCanonicalName()
+			BasicConfig.KEY_RUN_ID, SimultaneousDistributedLoadTest.class.getCanonicalName()
 		);
 		DistributedLoadBuilderTestBase.setUpClass();
 		//
-		final RunTimeConfig rtConfig = RunTimeConfig.getContext();
-		rtConfig.set(RunTimeConfig.KEY_API_NAME, "atmos");
-		rtConfig.set(RunTimeConfig.KEY_LOAD_LIMIT_TIME, LOAD_LIMIT_TIME_SEC + "s");
-		rtConfig.set(RunTimeConfig.KEY_SCENARIO_CHAIN_LOAD, LOAD_SEQ);
-		rtConfig.set(RunTimeConfig.KEY_SCENARIO_CHAIN_CONCURRENT, true);
-		RunTimeConfig.setContext(rtConfig);
+		final BasicConfig rtConfig = BasicConfig.getContext();
+		rtConfig.set(BasicConfig.KEY_API_NAME, "atmos");
+		rtConfig.set(BasicConfig.KEY_LOAD_LIMIT_TIME, LOAD_LIMIT_TIME_SEC + "s");
+		rtConfig.set(BasicConfig.KEY_SCENARIO_CHAIN_LOAD, LOAD_SEQ);
+		rtConfig.set(BasicConfig.KEY_SCENARIO_CHAIN_CONCURRENT, true);
+		BasicConfig.setContext(rtConfig);
 		//
 		final Chain chainScenario = new Chain(rtConfig);
 		try(

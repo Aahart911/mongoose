@@ -1,6 +1,6 @@
 package com.emc.mongoose.core.impl.load.executor;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 import com.emc.mongoose.common.io.IOWorker;
 import com.emc.mongoose.common.log.Markers;
@@ -37,15 +37,15 @@ implements FileLoadExecutor<T> {
 	private final ExecutorService ioTaskExecutor;
 	//
 	public BasicFileLoadExecutor(
-		final RunTimeConfig rtConfig, final FileIOConfig<T, ? extends Directory<T>> ioConfig,
+		final BasicConfig rtConfig, final FileIOConfig<T, ? extends Directory<T>> ioConfig,
 		final String[] addrs, final int connCountPerNode, final int threadCount,
 		final ItemSrc<T> itemSrc, final long maxCount,
 		final long sizeMin, final long sizeMax, final float sizeBias,
-		final int manualTaskSleepMicroSecs, final float rateLimit, final int countUpdPerReq
+		final float rateLimit, final int countUpdPerReq
 	) throws ClassCastException {
 		super(
 			rtConfig, ioConfig, addrs, connCountPerNode, threadCount, itemSrc, maxCount,
-			sizeMin, sizeMax, sizeBias, manualTaskSleepMicroSecs, rateLimit, countUpdPerReq
+			sizeMin, sizeMax, sizeBias, rateLimit, countUpdPerReq
 		);
 		ioTaskExecutor = new ThreadPoolExecutor(
 			threadCount, threadCount, 0, TimeUnit.SECONDS,

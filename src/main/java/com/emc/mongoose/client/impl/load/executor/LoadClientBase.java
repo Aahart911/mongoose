@@ -2,7 +2,7 @@ package com.emc.mongoose.client.impl.load.executor;
 // mongoose-common.jar
 import com.emc.mongoose.common.concurrent.GroupThreadFactory;
 import com.emc.mongoose.common.concurrent.ThreadUtil;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 // mongoose-core-api.jar
@@ -174,7 +174,7 @@ implements LoadClient<T, W> {
 	//
 	@SuppressWarnings("unchecked")
 	public LoadClientBase(
-		final RunTimeConfig rtConfig, final IOConfig<?, ?> ioConfig, final String addrs[],
+		final BasicConfig rtConfig, final IOConfig<?, ?> ioConfig, final String addrs[],
 		final int connCountPerNode, final int threadCount,
 		final ItemSrc<T> itemSrc, final long maxCount,
 		final Map<String, W> remoteLoadMap

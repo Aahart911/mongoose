@@ -6,7 +6,7 @@ import com.emc.mongoose.core.api.io.conf.WSRequestConfig;
 // mongoose-server-api.jar
 import com.emc.mongoose.server.api.load.builder.WSDataLoadBuilderSvc;
 // mongoose-common.jar
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.net.ServiceUtil;
 // mongoose-core-impl.jar
 import com.emc.mongoose.core.impl.io.conf.WSRequestConfigBase;
@@ -35,12 +35,12 @@ implements WSDataLoadBuilderClient<T, W, U> {
 	//
 	public BasicWSDataLoadBuilderClient()
 	throws IOException {
-		this(RunTimeConfig.getContext());
+		this(BasicConfig.getContext());
 	}
 	//
-	public BasicWSDataLoadBuilderClient(final RunTimeConfig runTimeConfig)
+	public BasicWSDataLoadBuilderClient(final BasicConfig appConfig)
 	throws IOException {
-		super(runTimeConfig);
+		super(appConfig);
 	}
 	//
 	@Override @SuppressWarnings("unchecked")
@@ -92,7 +92,7 @@ implements WSDataLoadBuilderClient<T, W, U> {
 		return (U) new BasicWSDataLoadClient<>(
 			rtConfig, (WSRequestConfig) ioConfig, storageNodeAddrs,
 			rtConfig.getConnCountPerNodeFor(loadTypeStr), rtConfig.getWorkerCountFor(loadTypeStr),
-			itemSrc, maxCount, remoteLoadMap
+			itemSrc, limitCount, remoteLoadMap
 		);
 	}
 }

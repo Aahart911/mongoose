@@ -5,7 +5,7 @@ import com.emc.mongoose.client.api.load.executor.FileLoadClient;
 //
 import com.emc.mongoose.client.impl.load.executor.BasicFileLoadClient;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.exceptions.DuplicateSvcNameException;
 import com.emc.mongoose.common.net.ServiceUtil;
 //
@@ -32,10 +32,10 @@ implements FileLoadBuilderClient<T, W, U> {
 	//
 	public BasicFileLoadBuilderClient()
 	throws IOException {
-		this(RunTimeConfig.getContext());
+		this(BasicConfig.getContext());
 	}
 	//
-	public BasicFileLoadBuilderClient(final RunTimeConfig rtConfig)
+	public BasicFileLoadBuilderClient(final BasicConfig rtConfig)
 	throws IOException {
 		super(rtConfig);
 	}
@@ -88,12 +88,12 @@ implements FileLoadBuilderClient<T, W, U> {
 		}
 		//
 		final String loadTypeStr = ioConfig.getLoadType().name().toLowerCase();
-		final RunTimeConfig rtConfig = RunTimeConfig.getContext();
+		final BasicConfig rtConfig = BasicConfig.getContext();
 		//
 		return (U) new BasicFileLoadClient<>(
 			rtConfig, (FileIOConfig<T, ? extends Directory<T>>) ioConfig, storageNodeAddrs,
 			rtConfig.getConnCountPerNodeFor(loadTypeStr), rtConfig.getWorkerCountFor(loadTypeStr),
-			itemSrc, maxCount, remoteLoadMap
+			itemSrc, limitCount, remoteLoadMap
 		);
 	}
 }

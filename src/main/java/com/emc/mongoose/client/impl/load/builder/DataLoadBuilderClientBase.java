@@ -4,7 +4,7 @@ import com.emc.mongoose.client.api.load.builder.DataLoadBuilderClient;
 import com.emc.mongoose.client.api.load.executor.DataLoadClient;
 //
 import com.emc.mongoose.common.conf.Constants;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 //
 import com.emc.mongoose.core.api.item.data.DataItem;
@@ -42,16 +42,16 @@ implements DataLoadBuilderClient<T, W, U> {
 	//
 	protected DataLoadBuilderClientBase()
 	throws IOException {
-		this(RunTimeConfig.getContext());
+		this(BasicConfig.getContext());
 	}
 	//
-	protected DataLoadBuilderClientBase(final RunTimeConfig rtConfig)
+	protected DataLoadBuilderClientBase(final BasicConfig rtConfig)
 	throws IOException {
 		super(rtConfig);
 	}
 	//
 	@Override
-	public final DataLoadBuilderClient<T, W, U> setRunTimeConfig(final RunTimeConfig rtConfig)
+	public final DataLoadBuilderClient<T, W, U> setRunTimeConfig(final BasicConfig rtConfig)
 	throws IllegalStateException, RemoteException {
 		super.setRunTimeConfig(rtConfig);
 		setMinObjSize(rtConfig.getDataSizeMin());
@@ -167,7 +167,7 @@ implements DataLoadBuilderClient<T, W, U> {
 					}
 					//
 					return (ItemSrc<T>) ((IOConfig) ioConfig.clone()).getContainerListInput(
-						maxCount, storageNodeAddrs == null ? null : storageNodeAddrs[0]
+						limitCount, storageNodeAddrs == null ? null : storageNodeAddrs[0]
 					);
 				}
 			} else if(flagUseNewItemSrc) {
@@ -188,7 +188,7 @@ implements DataLoadBuilderClient<T, W, U> {
 				}
 				//
 				return (ItemSrc<T>) ((IOConfig) ioConfig.clone()).getContainerListInput(
-					maxCount, storageNodeAddrs == null ? null : storageNodeAddrs[0]
+					limitCount, storageNodeAddrs == null ? null : storageNodeAddrs[0]
 				);
 			}
 		} catch(final RemoteException e) {

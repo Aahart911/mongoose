@@ -1,6 +1,6 @@
 package com.emc.mongoose.common.log.appenders;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 //
 import org.apache.commons.collections4.queue.CircularFifoQueue;
@@ -40,7 +40,7 @@ extends AbstractAppender {
 	private final static Layout<? extends Serializable>
 		DEFAULT_LAYOUT = SerializedLayout.createLayout();
 	//
-	private final String KEY_RUN_ID = RunTimeConfig.KEY_RUN_ID;
+	private final String KEY_RUN_ID = BasicConfig.KEY_RUN_ID;
 	//
 	private static boolean ENABLED_FLAG;
 	//

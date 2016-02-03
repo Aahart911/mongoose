@@ -1,6 +1,6 @@
 package com.emc.mongoose.integ.feature.filesystem;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 import com.emc.mongoose.common.log.appenders.RunIdFileManager;
 //
@@ -37,8 +37,8 @@ extends DistributedFileSystemTestBase {
 	@BeforeClass
 	public static void setUpClass()
 	throws Exception {
-		System.setProperty(RunTimeConfig.KEY_RUN_ID, RUN_ID);
-		System.setProperty(RunTimeConfig.KEY_ITEM_PREFIX, "/tmp/" + RUN_ID);
+		System.setProperty(BasicConfig.KEY_RUN_ID, RUN_ID);
+		System.setProperty(BasicConfig.KEY_ITEM_PREFIX, "/tmp/" + RUN_ID);
 		DistributedFileSystemTestBase.setUpClass();
 		try(
 			final StorageClient<FileItem> client = CLIENT_BUILDER
@@ -59,8 +59,8 @@ extends DistributedFileSystemTestBase {
 		CLIENT_BUILDER
 			.setItemClass("file")
 			.setLimitCount(COUNT_TO_WRITE);
-		final RunTimeConfig rtConfig = RunTimeConfig.getContext();
-		rtConfig.setProperty(RunTimeConfig.KEY_RUN_ID, RUN_ID + "_FilesWrite");
+		final BasicConfig rtConfig = BasicConfig.getContext();
+		rtConfig.setProperty(BasicConfig.KEY_RUN_ID, RUN_ID + "_FilesWrite");
 		try(
 			final BufferedReader
 				in = Files.newBufferedReader(dirListFile.toPath(), StandardCharsets.UTF_8)
@@ -71,7 +71,7 @@ extends DistributedFileSystemTestBase {
 					break;
 				} else {
 					rtConfig.setProperty(
-						RunTimeConfig.KEY_ITEM_PREFIX, "/tmp/" + RUN_ID + "/" + nextDirName
+						BasicConfig.KEY_ITEM_PREFIX, "/tmp/" + RUN_ID + "/" + nextDirName
 					);
 					nextDirClient = CLIENT_BUILDER.build();
 					nextDirClient.write(null, null, COUNT_TO_WRITE, 100, 1);
@@ -81,8 +81,8 @@ extends DistributedFileSystemTestBase {
 		//
 		TimeUnit.SECONDS.sleep(1);
 		//
-		rtConfig.set(RunTimeConfig.KEY_RUN_ID, RUN_ID + "_DirsRead");
-		rtConfig.set(RunTimeConfig.KEY_ITEM_PREFIX, "/tmp/" + RUN_ID);
+		rtConfig.set(BasicConfig.KEY_RUN_ID, RUN_ID + "_DirsRead");
+		rtConfig.set(BasicConfig.KEY_ITEM_PREFIX, "/tmp/" + RUN_ID);
 		try(
 			final StorageClient<FileItem> client = CLIENT_BUILDER
 				.setLimitTime(0, TimeUnit.SECONDS)
@@ -104,8 +104,8 @@ extends DistributedFileSystemTestBase {
 	@AfterClass
 	public static void tearDownClass()
 	throws Exception {
-		System.setProperty(RunTimeConfig.KEY_ITEM_CLASS, "data");
-		System.setProperty(RunTimeConfig.KEY_ITEM_PREFIX, "");
+		System.setProperty(BasicConfig.KEY_ITEM_CLASS, "data");
+		System.setProperty(BasicConfig.KEY_ITEM_PREFIX, "");
 		DistributedFileSystemTestBase.tearDownClass();
 		final File tgtDir = Paths.get("/tmp/" + RUN_ID).toFile();
 		for(final File f : tgtDir.listFiles()) {

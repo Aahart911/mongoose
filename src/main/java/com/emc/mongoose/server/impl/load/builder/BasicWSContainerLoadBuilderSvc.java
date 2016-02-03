@@ -1,7 +1,8 @@
 package com.emc.mongoose.server.impl.load.builder;
 
+import com.emc.mongoose.common.concurrent.ThreadUtil;
 import com.emc.mongoose.common.conf.Constants;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.exceptions.DuplicateSvcNameException;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
@@ -43,9 +44,9 @@ implements WSContainerLoadBuilderSvc<T, C, U> {
 	//
 	private String name = getClass().getName();
 	//
-	public BasicWSContainerLoadBuilderSvc(final RunTimeConfig runTimeConfig)
+	public BasicWSContainerLoadBuilderSvc(final BasicConfig appConfig)
 	throws RemoteException {
-		super(runTimeConfig);
+		super(appConfig);
 	}
 	//
 	@Override
@@ -99,20 +100,16 @@ implements WSContainerLoadBuilderSvc<T, C, U> {
 		}
 		//
 		final WSRequestConfig wsReqConf = WSRequestConfig.class.cast(ioConfig);
-		final RunTimeConfig localRunTimeConfig = RunTimeConfig.getContext();
+		final BasicConfig ctxConfig = BasicConfig.getContext();
 		// the statement below fixes hi-level API distributed mode usage and tests
-		localRunTimeConfig.setProperty(RunTimeConfig.KEY_RUN_MODE, Constants.RUN_MODE_SERVER);
-		final IOTask.Type loadType = ioConfig.getLoadType();
-		final int
-			connPerNode = loadTypeConnPerNode.get(loadType),
-			minThreadCount = getMinIOThreadCount(
-				loadTypeWorkerCount.get(loadType), storageNodeAddrs.length, connPerNode
-			);
+		ctxConfig.setProperty(BasicConfig.KEY_RUN_MODE, Constants.RUN_MODE_SERVER);
+		final int minThreadCount = getMinIoThreadCount(
+			ThreadUtil.getWorkerCount(), storageNodeAddrs.length, threadCount
+		);
 		//
 		return (U) new BasicWSContainerLoadSvc<>(
-			localRunTimeConfig, wsReqConf, storageNodeAddrs, connPerNode, minThreadCount,
-			itemSrc == null ? getDefaultItemSource() : itemSrc,
-			maxCount, manualTaskSleepMicroSecs, rateLimit
+			ctxConfig, wsReqConf, storageNodeAddrs, threadCount, minThreadCount,
+			itemSrc == null ? getDefaultItemSource() : itemSrc, limitCount, limitRate
 		);
 	}
 	//

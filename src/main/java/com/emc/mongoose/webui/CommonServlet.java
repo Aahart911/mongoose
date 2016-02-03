@@ -1,6 +1,6 @@
 package com.emc.mongoose.webui;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 //
 import org.apache.logging.log4j.Level;
@@ -21,29 +21,29 @@ public abstract class CommonServlet
 extends HttpServlet {
 	//
 	private final static Logger LOG = LogManager.getLogger();
-	private static volatile RunTimeConfig LAST_RUN_TIME_CONFIG;
-	private static final RunTimeConfig DEFAULT_CFG;
+	private static volatile BasicConfig LAST_RUN_TIME_CONFIG;
+	private static final BasicConfig DEFAULT_CFG;
 	//
 	public static ConcurrentHashMap<String, Thread> THREADS_MAP;
 	public static ConcurrentHashMap<String, Boolean> STOPPED_RUN_MODES;
 	public static ConcurrentHashMap<String, String> CHARTS_MAP;
 	//
-	protected RunTimeConfig runTimeConfig;
+	protected BasicConfig appConfig;
 	//
 	static {
 		THREADS_MAP = new ConcurrentHashMap<>();
 		STOPPED_RUN_MODES = new ConcurrentHashMap<>();
 		CHARTS_MAP = new ConcurrentHashMap<>();
-		LAST_RUN_TIME_CONFIG = (RunTimeConfig) RunTimeConfig.getContext().clone();
-		DEFAULT_CFG = RunTimeConfig.getContext();
+		LAST_RUN_TIME_CONFIG = (BasicConfig) BasicConfig.getContext().clone();
+		DEFAULT_CFG = BasicConfig.getContext();
 	}
 	//
 	@Override
 	public void init() {
 		try {
 			super.init();
-			runTimeConfig = (RunTimeConfig) (
-				(RunTimeConfig) getServletContext().getAttribute("rtConfig")
+			appConfig = (BasicConfig) (
+				(BasicConfig) getServletContext().getAttribute("rtConfig")
 			).clone();
 		} catch (final ServletException e) {
 			LogUtil.exception(LOG, Level.ERROR, e, "Interrupted servlet init method");
@@ -54,16 +54,16 @@ extends HttpServlet {
 		for (final Map.Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
 			if (entry.getValue()[0].trim().isEmpty()) {
 				final String[] defaultPropValue = DEFAULT_CFG.getStringArray(entry.getKey());
-				if (defaultPropValue.length > 0 && !entry.getKey().equals(RunTimeConfig.KEY_RUN_ID)) {
-					runTimeConfig.set(entry.getKey(), convertArrayToString(defaultPropValue));
+				if (defaultPropValue.length > 0 && !entry.getKey().equals(BasicConfig.KEY_RUN_ID)) {
+					appConfig.set(entry.getKey(), convertArrayToString(defaultPropValue));
 				}
 				continue;
 			}
 			if (entry.getValue().length > 1) {
-				runTimeConfig.set(entry.getKey(), convertArrayToString(entry.getValue()));
+				appConfig.set(entry.getKey(), convertArrayToString(entry.getValue()));
 				continue;
 			}
-			runTimeConfig.set(entry.getKey(), entry.getValue()[0].trim());
+			appConfig.set(entry.getKey(), entry.getValue()[0].trim());
 		}
 	}
 	//
@@ -75,11 +75,11 @@ extends HttpServlet {
 				.trim();
 	}
 	//
-	public static void updateLastRunTimeConfig(final RunTimeConfig runTimeConfig) {
-		LAST_RUN_TIME_CONFIG = (RunTimeConfig) runTimeConfig.clone();
+	public static void updateLastRunTimeConfig(final BasicConfig appConfig) {
+		LAST_RUN_TIME_CONFIG = (BasicConfig) appConfig.clone();
 	}
 	//
-	public static RunTimeConfig getLastRunTimeConfig() {
+	public static BasicConfig getLastRunTimeConfig() {
 		return LAST_RUN_TIME_CONFIG;
 	}
 }

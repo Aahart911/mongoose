@@ -2,7 +2,7 @@ package com.emc.mongoose.client.impl.load.executor;
 //
 import com.emc.mongoose.client.api.load.executor.WSContainerLoadClient;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 import com.emc.mongoose.core.api.item.container.Container;
 import com.emc.mongoose.core.api.item.data.WSObject;
@@ -24,7 +24,7 @@ public class BasicWSContainerLoadClient<
 > extends LoadClientBase<C, W> implements WSContainerLoadClient<T, C, W> {
 	//
 	public BasicWSContainerLoadClient(
-		final RunTimeConfig rtConfig, final WSRequestConfig reqConfig, final String addrs[],
+		final BasicConfig rtConfig, final WSRequestConfig reqConfig, final String addrs[],
 		final int connCountPerNode, final int threadCount,
 		final ItemSrc<C> itemSrc, final long maxCount,
 		final Map<String, W> remoteLoadMap

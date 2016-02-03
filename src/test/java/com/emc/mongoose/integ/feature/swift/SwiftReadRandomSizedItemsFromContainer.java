@@ -1,6 +1,6 @@
 package com.emc.mongoose.integ.feature.swift;
 
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.appenders.RunIdFileManager;
 import com.emc.mongoose.core.api.item.data.WSObject;
 import com.emc.mongoose.integ.base.StandaloneClientTestBase;
@@ -25,7 +25,7 @@ extends StandaloneClientTestBase {
 	throws Exception {
 		//
 		final String runId = SwiftReadRandomSizedItemsFromContainer.class.getCanonicalName();
-		System.setProperty(RunTimeConfig.KEY_RUN_ID, runId);
+		System.setProperty(BasicConfig.KEY_RUN_ID, runId);
 		StandaloneClientTestBase.setUpClass();
 		//
 		try(

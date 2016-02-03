@@ -1,5 +1,5 @@
 package com.emc.mongoose.integ.feature.filesystem;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.conf.SizeUtil;
 import com.emc.mongoose.common.log.appenders.RunIdFileManager;
 import com.emc.mongoose.core.api.item.data.FileItem;
@@ -35,8 +35,8 @@ extends FileSystemTestBase {
 	@BeforeClass
 	public static void setUpClass()
 	throws Exception {
-		System.setProperty(RunTimeConfig.KEY_RUN_ID, RUN_ID);
-		System.setProperty(RunTimeConfig.KEY_ITEM_PREFIX, "/tmp/" + RUN_ID);
+		System.setProperty(BasicConfig.KEY_RUN_ID, RUN_ID);
+		System.setProperty(BasicConfig.KEY_ITEM_PREFIX, "/tmp/" + RUN_ID);
 		FileSystemTestBase.setUpClass();
 		final List<FileItem>
 			itemBuffAppend = new ArrayList<>(COUNT_TO_WRITE);
@@ -65,8 +65,8 @@ extends FileSystemTestBase {
 	@AfterClass
 	public static void tearDownClass()
 	throws Exception {
-		System.setProperty(RunTimeConfig.KEY_ITEM_CLASS, "data");
-		System.setProperty(RunTimeConfig.KEY_ITEM_PREFIX, "");
+		System.setProperty(BasicConfig.KEY_ITEM_CLASS, "data");
+		System.setProperty(BasicConfig.KEY_ITEM_PREFIX, "");
 		FileSystemTestBase.tearDownClass();
 		final File tgtDir = Paths.get("/tmp/" + RUN_ID).toFile();
 		for(final File f : tgtDir.listFiles()) {

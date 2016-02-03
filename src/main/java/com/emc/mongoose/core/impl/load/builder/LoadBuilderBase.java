@@ -1,7 +1,6 @@
 package com.emc.mongoose.core.impl.load.builder;
 // mongoose-common.jar
-import com.emc.mongoose.common.concurrent.ThreadUtil;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.common.log.LogUtil;
 // mongoose-core-api.jar
@@ -25,10 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.rmi.RemoteException;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.concurrent.TimeUnit;
 /**
  Created by kurila on 20.10.14.
  */
@@ -37,29 +33,26 @@ implements LoadBuilder<T, U> {
 	//
 	private final static Logger LOG = LogManager.getLogger();
 	//
-	protected volatile RunTimeConfig rtConfig;
-	protected long maxCount = 0;
+	protected volatile BasicConfig rtConfig;
 	protected volatile IOConfig<?, ?> ioConfig = getDefaultIOConfig();
-	protected float rateLimit;
-	protected int manualTaskSleepMicroSecs;
+	protected long limitCount = 0;
+	protected float limitRate = 0;
+	protected int threadCount = 1;
 	protected ItemSrc itemSrc;
 	protected String storageNodeAddrs[];
-	protected final Map<IOTask.Type, Integer>
-		loadTypeWorkerCount = new HashMap<>(),
-		loadTypeConnPerNode = new HashMap<>();
 	protected boolean flagUseNewItemSrc, flagUseNoneItemSrc, flagUseContainerItemSrc;
 	//
 	protected abstract IOConfig<?, ?> getDefaultIOConfig();
 	//
 	public LoadBuilderBase()
 	throws RemoteException {
-		this(RunTimeConfig.getContext());
+		this(BasicConfig.getContext());
 	}
 	//
-	public LoadBuilderBase(final RunTimeConfig runTimeConfig)
+	public LoadBuilderBase(final BasicConfig appConfig)
 	throws RemoteException {
 		resetItemSrc();
-		setRunTimeConfig(runTimeConfig);
+		setRunTimeConfig(appConfig);
 	}
 	//
 	protected void resetItemSrc() {
@@ -70,68 +63,30 @@ implements LoadBuilder<T, U> {
 	}
 	//
 	@Override
-	public LoadBuilder<T, U> setRunTimeConfig(final RunTimeConfig rtConfig)
+	public LoadBuilder<T, U> setRunTimeConfig(final BasicConfig rtConfig)
 	throws IllegalStateException, RemoteException {
 		this.rtConfig = rtConfig;
-		RunTimeConfig.setContext(rtConfig);
+		BasicConfig.setContext(rtConfig);
 		if(ioConfig != null) {
-			ioConfig.setRunTimeConfig(rtConfig);
+			ioConfig.setAppConfig(rtConfig);
 		} else {
 			throw new IllegalStateException("Shared request config is not initialized");
 		}
 		//
 		String paramName;
-		for(final IOTask.Type loadType: IOTask.Type.values()) {
-			paramName = RunTimeConfig.getConnCountPerNodeParamName(loadType.name().toLowerCase());
-			try {
-				setConnPerNodeFor(
-					rtConfig.getConnCountPerNodeFor(loadType.name().toLowerCase()), loadType
-				);
-			} catch(final NoSuchElementException e) {
-				LOG.error(Markers.ERR, MSG_TMPL_NOT_SPECIFIED, paramName);
-			} catch(final IllegalArgumentException e) {
-				LOG.error(Markers.ERR, MSG_TMPL_INVALID_VALUE, paramName, e.getMessage());
-			}
-		}
-		//
-		for(final IOTask.Type loadType: IOTask.Type.values()) {
-			paramName = RunTimeConfig.getLoadWorkersParamName(loadType.name().toLowerCase());
-			try {
-				setWorkerCountFor(
-					rtConfig.getWorkerCountFor(loadType.name().toLowerCase()), loadType
-				);
-			} catch(final NoSuchElementException e) {
-				LOG.error(Markers.ERR, MSG_TMPL_NOT_SPECIFIED, paramName);
-			} catch(final IllegalArgumentException e) {
-				LOG.error(Markers.ERR, MSG_TMPL_INVALID_VALUE, paramName, e.getMessage());
-			}
-		}
-		//
-		paramName = RunTimeConfig.KEY_DATA_ITEM_COUNT;
+		paramName = BasicConfig.KEY_DATA_ITEM_COUNT;
 		try {
-			setMaxCount(rtConfig.getLoadLimitCount());
+			setLimitCount(rtConfig.getLoadLimitCount());
 		} catch(final NoSuchElementException e) {
 			LOG.error(Markers.ERR, MSG_TMPL_NOT_SPECIFIED, paramName);
 		} catch(final IllegalArgumentException e) {
 			LOG.error(Markers.ERR, MSG_TMPL_INVALID_VALUE, paramName, e.getMessage());
 		}
 		//
-		paramName = RunTimeConfig.KEY_LOAD_LIMIT_REQSLEEP_MILLISEC;
-		try {
-			setManualTaskSleepMicroSecs(
-				(int) TimeUnit.MILLISECONDS.toMicros(
-					rtConfig.getLoadLimitReqSleepMilliSec()
-				)
-			);
-		} catch(final NoSuchElementException e) {
-			LOG.error(Markers.ERR, MSG_TMPL_NOT_SPECIFIED, paramName);
-		} catch(final IllegalArgumentException e) {
-			LOG.error(Markers.ERR, MSG_TMPL_INVALID_VALUE, paramName, e.getMessage());
-		}
 		//
-		paramName = RunTimeConfig.KEY_LOAD_LIMIT_RATE;
+		paramName = BasicConfig.KEY_LOAD_LIMIT_RATE;
 		try {
-			setRateLimit(rtConfig.getLoadLimitRate());
+			setLimitRate(rtConfig.getLoadLimitRate());
 		} catch(final NoSuchElementException e) {
 			LOG.error(Markers.ERR, MSG_TMPL_NOT_SPECIFIED, paramName);
 		} catch(final IllegalArgumentException e) {
@@ -140,16 +95,16 @@ implements LoadBuilder<T, U> {
 		//
 		if(ioConfig instanceof RequestConfig) {
 			final RequestConfig reqConfig = (RequestConfig) ioConfig;
-			paramName = RunTimeConfig.KEY_STORAGE_ADDRS;
+			paramName = BasicConfig.KEY_STORAGE_ADDRS;
 			try {
-				setDataNodeAddrs(rtConfig.getStorageAddrsWithPorts());
+				setNodeAddrs(rtConfig.getStorageAddrsWithPorts());
 			} catch(final NoSuchElementException | ConversionException e) {
 				LOG.error(Markers.ERR, MSG_TMPL_NOT_SPECIFIED, paramName);
 			} catch(final IllegalArgumentException e) {
 				LOG.error(Markers.ERR, MSG_TMPL_INVALID_VALUE, paramName, e.getMessage());
 			}
 			//
-			paramName = RunTimeConfig.getApiPortParamName(reqConfig.getAPI().toLowerCase());
+			paramName = BasicConfig.getApiPortParamName(reqConfig.getAPI().toLowerCase());
 			try {
 				reqConfig.setPort(rtConfig.getApiTypePort(reqConfig.getAPI().toLowerCase()));
 			} catch(final NoSuchElementException e) {
@@ -221,18 +176,18 @@ implements LoadBuilder<T, U> {
 	}
 	//
 	@Override
-	public LoadBuilder<T, U> setMaxCount(final long maxCount)
+	public LoadBuilder<T, U> setLimitCount(final long maxCount)
 	throws IllegalArgumentException, RemoteException {
 		LOG.debug(Markers.MSG, "Set max data item count: {}", maxCount);
 		if(maxCount < 0) {
 			throw new IllegalArgumentException("Count should be >= 0");
 		}
-		this.maxCount = maxCount;
+		this.limitCount = maxCount;
 		return this;
 	}
 	//
 	@Override
-	public LoadBuilder<T, U> setRateLimit(final float rateLimit)
+	public LoadBuilder<T, U> setLimitRate(final float rateLimit)
 	throws IllegalArgumentException, RemoteException {
 		LOG.debug(Markers.MSG, "Set rate limit to: {}", rateLimit);
 		if(rateLimit < 0) {
@@ -240,84 +195,27 @@ implements LoadBuilder<T, U> {
 		} else {
 			LOG.debug(Markers.MSG, "Using load rate limit: {}", rateLimit);
 		}
-		this.rateLimit = rateLimit;
+		this.limitRate = rateLimit;
 		return this;
 	}
 	//
 	@Override
-	public LoadBuilder<T, U> setManualTaskSleepMicroSecs(final int manualTaskSleepMicroSecs)
+	public LoadBuilder<T, U> setThreadCount(final int threadCount)
 	throws IllegalArgumentException, RemoteException {
-		LOG.debug(Markers.MSG, "Set manual I/O tasks sleep to: {}[us]", manualTaskSleepMicroSecs);
-		if(rateLimit < 0) {
-			throw new IllegalArgumentException("Tasks sleep time shouldn't be negative");
-		} else {
-			LOG.debug(Markers.MSG, "Using tasks sleep time: {}[us]", manualTaskSleepMicroSecs);
-		}
-		this.manualTaskSleepMicroSecs = manualTaskSleepMicroSecs;
-		return this;
-	}
-	//
-
-	//
-	@Override
-	public LoadBuilder<T, U> setWorkerCountDefault(final int workersPerNode)
-	throws RemoteException {
-		for(final IOTask.Type loadType: IOTask.Type.values()) {
-			setWorkerCountFor(workersPerNode, loadType);
-		}
+		LOG.debug(Markers.MSG, "Set default connection count per node: {}", threadCount);
+		this.threadCount = threadCount;
 		return this;
 	}
 	//
 	@Override
-	public LoadBuilder<T, U> setWorkerCountFor(
-		final int workersPerNode, final IOTask.Type loadType
-	) throws RemoteException {
-		if(workersPerNode > 0) {
-			loadTypeWorkerCount.put(loadType, workersPerNode);
-		} else {
-			loadTypeWorkerCount.put(loadType, ThreadUtil.getWorkerCount());
-		}
-		LOG.debug(
-			Markers.MSG, "Set worker count per node {} for load type \"{}\"",
-			workersPerNode, loadType
-		);
-		return this;
-	}
-	//
-	@Override
-	public LoadBuilder<T, U> setConnPerNodeDefault(final int connPerNode)
-	throws IllegalArgumentException, RemoteException {
-		LOG.debug(Markers.MSG, "Set default connection count per node: {}", connPerNode);
-		for(final IOTask.Type loadType : IOTask.Type.values()) {
-			setConnPerNodeFor(connPerNode, loadType);
-		}
-		return this;
-	}
-	//
-	@Override
-	public LoadBuilder<T, U> setConnPerNodeFor(
-		final int connPerNode, final IOTask.Type loadType
+	public LoadBuilder<T, U> setNodeAddrs(
+		final String[] nodeAddrs
 	) throws IllegalArgumentException, RemoteException {
-		if(connPerNode < 1) {
-			throw new IllegalArgumentException("Concurrency level should not be less than 1");
-		}
-		LOG.debug(
-			Markers.MSG, "Set connection count per node {} for load type \"{}\"",
-			connPerNode, loadType
-		);
-		loadTypeConnPerNode.put(loadType, connPerNode);
-		return this;
-	}
-	//
-	@Override
-	public LoadBuilder<T, U> setDataNodeAddrs(
-		final String[] dataNodeAddrs
-	) throws IllegalArgumentException, RemoteException {
-		LOG.debug(Markers.MSG, "Set storage nodes: {}", Arrays.toString(dataNodeAddrs));
-		if(dataNodeAddrs == null || dataNodeAddrs.length == 0) {
+		LOG.debug(Markers.MSG, "Set storage nodes: {}", Arrays.toString(nodeAddrs));
+		if(nodeAddrs == null || nodeAddrs.length == 0) {
 			throw new IllegalArgumentException("Data node address list should not be empty");
 		}
-		this.storageNodeAddrs = dataNodeAddrs;
+		this.storageNodeAddrs = nodeAddrs;
 		return this;
 	}
 	//
@@ -333,20 +231,14 @@ implements LoadBuilder<T, U> {
 	public LoadBuilderBase<T, U> clone()
 	throws CloneNotSupportedException {
 		final LoadBuilderBase<T, U> lb = (LoadBuilderBase<T, U>) super.clone();
-		lb.rtConfig = (RunTimeConfig) rtConfig.clone();
+		lb.rtConfig = (BasicConfig) rtConfig.clone();
 		LOG.debug(Markers.MSG, "Cloning request config for {}", ioConfig.toString());
 		lb.ioConfig = ioConfig.clone();
-		lb.maxCount = maxCount;
-		for(final IOTask.Type loadType : loadTypeWorkerCount.keySet()) {
-			lb.loadTypeWorkerCount.put(loadType, loadTypeWorkerCount.get(loadType));
-		}
-		for(final IOTask.Type loadType : loadTypeConnPerNode.keySet()) {
-			lb.loadTypeConnPerNode.put(loadType, loadTypeConnPerNode.get(loadType));
-		}
+		lb.limitCount = limitCount;
+		lb.threadCount = threadCount;
 		lb.storageNodeAddrs = storageNodeAddrs;
 		lb.itemSrc = itemSrc;
-		lb.rateLimit = rateLimit;
-		lb.manualTaskSleepMicroSecs = manualTaskSleepMicroSecs;
+		lb.limitRate = limitRate;
 		lb.flagUseNewItemSrc = flagUseNewItemSrc;
 		lb.flagUseNoneItemSrc = flagUseNoneItemSrc;
 		lb.flagUseContainerItemSrc = flagUseContainerItemSrc;
@@ -391,7 +283,7 @@ implements LoadBuilder<T, U> {
 		}
 	}
 	//
-	protected final int getMinIOThreadCount(
+	protected final int getMinIoThreadCount(
 		final int threadCount, final int nodeCount, final int connCountPerNode
 	) {
 		return Math.min(Math.max(threadCount, nodeCount), nodeCount * connCountPerNode);
@@ -402,8 +294,7 @@ implements LoadBuilder<T, U> {
 	//
 	@Override
 	public String toString() {
-		return ioConfig.toString() + "." +
-			loadTypeConnPerNode.get(loadTypeConnPerNode.keySet().iterator().next());
+		return ioConfig.toString() + "." + threadCount;
 	}
 	//
 	@Override

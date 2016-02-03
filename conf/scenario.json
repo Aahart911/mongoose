@@ -1,0 +1,8 @@
+{
+	"scenario" : {
+		"parallel" : {
+			"job" : {
+			}
+		}
+	}
+}

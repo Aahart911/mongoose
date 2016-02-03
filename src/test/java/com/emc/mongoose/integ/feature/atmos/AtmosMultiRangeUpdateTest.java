@@ -1,6 +1,6 @@
 package com.emc.mongoose.integ.feature.atmos;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.conf.SizeUtil;
 //
 import com.emc.mongoose.common.log.appenders.RunIdFileManager;
@@ -41,7 +41,7 @@ extends StandaloneClientTestBase {
 	throws Exception {
 		//
 		System.setProperty(
-			RunTimeConfig.KEY_RUN_ID, AtmosMultiRangeUpdateTest.class.getCanonicalName()
+			BasicConfig.KEY_RUN_ID, AtmosMultiRangeUpdateTest.class.getCanonicalName()
 		);
 		StandaloneClientTestBase.setUpClass();
 		//

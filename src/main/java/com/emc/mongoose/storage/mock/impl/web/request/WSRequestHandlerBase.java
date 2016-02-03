@@ -1,6 +1,6 @@
 package com.emc.mongoose.storage.mock.impl.web.request;
 // mongoose-common.jar
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 // mongoose-core-api.jar
@@ -59,10 +59,10 @@ implements ReqURIMatchingHandler<T> {
 	protected final int batchSize;
 	//
 	protected WSRequestHandlerBase(
-		final RunTimeConfig runTimeConfig, final WSMock<T> sharedStorage
+		final BasicConfig appConfig, final WSMock<T> sharedStorage
 	) {
-		this.rateLimit = runTimeConfig.getLoadLimitRate();
-		this.batchSize = runTimeConfig.getBatchSize();
+		this.rateLimit = appConfig.getLoadLimitRate();
+		this.batchSize = appConfig.getBatchSize();
 		this.sharedStorage = sharedStorage;
 		this.ioStats = sharedStorage.getStats();
 	}
@@ -198,7 +198,7 @@ implements ReqURIMatchingHandler<T> {
 				rangeHeaderValue = rangeHeaderValue.substring(
 					VALUE_RANGE_PREFIX.length(), rangeHeaderValue.length()
 				);
-				rangeValuePairs = rangeHeaderValue.split(RunTimeConfig.LIST_SEP);
+				rangeValuePairs = rangeHeaderValue.split(BasicConfig.LIST_SEP);
 				for(final String rangeValuePair : rangeValuePairs) {
 					rangeValue = rangeValuePair.split(VALUE_RANGE_CONCAT);
 					if(rangeValue.length == 1) {

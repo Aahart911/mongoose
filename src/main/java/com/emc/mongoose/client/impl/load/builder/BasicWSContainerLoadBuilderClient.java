@@ -3,7 +3,7 @@ package com.emc.mongoose.client.impl.load.builder;
 import com.emc.mongoose.client.api.load.executor.WSContainerLoadClient;
 //
 import com.emc.mongoose.client.impl.load.executor.BasicWSContainerLoadClient;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.net.ServiceUtil;
 //
 import com.emc.mongoose.core.api.item.container.Container;
@@ -37,12 +37,12 @@ public class BasicWSContainerLoadBuilderClient<
 	//
 	public BasicWSContainerLoadBuilderClient()
 	throws IOException {
-		this(RunTimeConfig.getContext());
+		this(BasicConfig.getContext());
 	}
 	//
-	public BasicWSContainerLoadBuilderClient(final RunTimeConfig runTimeConfig)
+	public BasicWSContainerLoadBuilderClient(final BasicConfig appConfig)
 	throws IOException {
-		super(runTimeConfig);
+		super(appConfig);
 	}
 	//
 	@Override @SuppressWarnings("unchecked")
@@ -100,7 +100,7 @@ public class BasicWSContainerLoadBuilderClient<
 		return (U) new BasicWSContainerLoadClient<>(
 			rtConfig, (WSRequestConfig) ioConfig, storageNodeAddrs,
 			rtConfig.getConnCountPerNodeFor(loadTypeStr), rtConfig.getWorkerCountFor(loadTypeStr),
-			itemSrc, maxCount, remoteLoadMap
+			itemSrc, limitCount, remoteLoadMap
 		);
 	}
 }

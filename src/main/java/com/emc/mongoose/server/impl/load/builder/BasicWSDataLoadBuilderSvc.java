@@ -1,7 +1,8 @@
 package com.emc.mongoose.server.impl.load.builder;
 //mongoose-common.jar
+import com.emc.mongoose.common.concurrent.ThreadUtil;
 import com.emc.mongoose.common.conf.Constants;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.conf.SizeUtil;
 import com.emc.mongoose.common.exceptions.DuplicateSvcNameException;
 import com.emc.mongoose.common.log.LogUtil;
@@ -43,9 +44,9 @@ implements WSDataLoadBuilderSvc<T, U> {
 	//
 	private String name = getClass().getName();
 	//
-	public BasicWSDataLoadBuilderSvc(final RunTimeConfig runTimeConfig)
+	public BasicWSDataLoadBuilderSvc(final BasicConfig appConfig)
 	throws RemoteException {
-		super(runTimeConfig);
+		super(appConfig);
 	}
 	//
 	@Override
@@ -99,9 +100,9 @@ implements WSDataLoadBuilderSvc<T, U> {
 		}
 		//
 		final WSRequestConfig wsReqConf = WSRequestConfig.class.cast(ioConfig);
-		final RunTimeConfig localRunTimeConfig = RunTimeConfig.getContext();
+		final BasicConfig ctxConfig = BasicConfig.getContext();
 		// the statement below fixes hi-level API distributed mode usage and tests
-		localRunTimeConfig.setProperty(RunTimeConfig.KEY_RUN_MODE, Constants.RUN_MODE_SERVER);
+		ctxConfig.setProperty(BasicConfig.KEY_RUN_MODE, Constants.RUN_MODE_SERVER);
 		if(minObjSize > maxObjSize) {
 			throw new IllegalStateException(
 				String.format(
@@ -111,18 +112,14 @@ implements WSDataLoadBuilderSvc<T, U> {
 			);
 		}
 		//
-		final IOTask.Type loadType = ioConfig.getLoadType();
-		final int
-			connPerNode = loadTypeConnPerNode.get(loadType),
-			minThreadCount = getMinIOThreadCount(
-				loadTypeWorkerCount.get(loadType), storageNodeAddrs.length, connPerNode
-			);
+		final int minThreadCount = getMinIoThreadCount(
+			ThreadUtil.getWorkerCount(), storageNodeAddrs.length, threadCount
+		);
 		//
 		return (U) new BasicWSDataLoadSvc<>(
-			localRunTimeConfig, wsReqConf, storageNodeAddrs, connPerNode, minThreadCount,
+			ctxConfig, wsReqConf, storageNodeAddrs, threadCount, minThreadCount,
 			itemSrc == null ? getDefaultItemSource() : itemSrc,
-			maxCount, minObjSize, maxObjSize, objSizeBias,
-			manualTaskSleepMicroSecs, rateLimit, updatesPerItem
+			limitCount, minObjSize, maxObjSize, objSizeBias, limitRate, updatesPerItem
 		);
 	}
 	//

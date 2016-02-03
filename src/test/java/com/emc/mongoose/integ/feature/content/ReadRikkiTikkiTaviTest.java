@@ -1,5 +1,5 @@
 package com.emc.mongoose.integ.feature.content;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.conf.SizeUtil;
 import com.emc.mongoose.common.log.appenders.RunIdFileManager;
 import com.emc.mongoose.core.api.item.data.WSObject;
@@ -38,8 +38,8 @@ extends StandaloneClientTestBase {
 	@BeforeClass
 	public static void setUpClass()
 		throws Exception {
-		System.setProperty(RunTimeConfig.KEY_RUN_ID, RUN_ID);
-		System.setProperty(RunTimeConfig.KEY_DATA_CONTENT_FPATH, "conf/content/textexample");
+		System.setProperty(BasicConfig.KEY_RUN_ID, RUN_ID);
+		System.setProperty(BasicConfig.KEY_DATA_CONTENT_FPATH, "conf/content/textexample");
 		StandaloneClientTestBase.setUpClass();
 		try(
 			final StorageClient<WSObject> client = CLIENT_BUILDER

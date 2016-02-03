@@ -1,6 +1,6 @@
 package com.emc.mongoose.integ.feature.circularity;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.conf.SizeUtil;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.appenders.RunIdFileManager;
@@ -61,15 +61,15 @@ extends StandaloneClientTestBase {
 	public static void setUpClass() {
 		try {
 			System.setProperty(
-				RunTimeConfig.KEY_RUN_ID, CircularReadAfterUpdateTest.class.getCanonicalName()
+				BasicConfig.KEY_RUN_ID, CircularReadAfterUpdateTest.class.getCanonicalName()
 			);
 			StandaloneClientTestBase.setUpClass();
 			//
-			final RunTimeConfig rtConfig = RunTimeConfig.getContext();
-			rtConfig.set(RunTimeConfig.KEY_LOAD_CIRCULAR, true);
-			rtConfig.set(RunTimeConfig.KEY_ITEM_QUEUE_MAX_SIZE, ITEM_MAX_QUEUE_SIZE);
-			rtConfig.set(RunTimeConfig.KEY_ITEM_SRC_BATCH_SIZE, BATCH_SIZE);
-			RunTimeConfig.setContext(rtConfig);
+			final BasicConfig rtConfig = BasicConfig.getContext();
+			rtConfig.set(BasicConfig.KEY_LOAD_CIRCULAR, true);
+			rtConfig.set(BasicConfig.KEY_ITEM_QUEUE_MAX_SIZE, ITEM_MAX_QUEUE_SIZE);
+			rtConfig.set(BasicConfig.KEY_ITEM_SRC_BATCH_SIZE, BATCH_SIZE);
+			BasicConfig.setContext(rtConfig);
 			//
 			try (
 				final StorageClient<WSObject> client = CLIENT_BUILDER

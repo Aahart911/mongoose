@@ -1,7 +1,7 @@
 package com.emc.mongoose.core.impl.load.model;
 //
 import com.emc.mongoose.common.conf.Constants;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 //
@@ -36,7 +36,7 @@ public class BasicLoadState<T extends Item>
 implements LoadState<T> {
 	//
 	private final int loadNumber;
-	private final RunTimeConfig runTimeConfig;
+	private final BasicConfig appConfig;
 	private final IOStats.Snapshot ioStatsSnapshot;
 	private final T lastDataItem;
 	//
@@ -45,9 +45,8 @@ implements LoadState<T> {
 		return loadNumber;
 	}
 	//
-	@Override
-	public RunTimeConfig getRunTimeConfig() {
-		return runTimeConfig;
+	public BasicConfig getAppConfig() {
+		return appConfig;
 	}
 	//
 	@Override
@@ -61,7 +60,7 @@ implements LoadState<T> {
 	}
 	//
 	@Override
-	public boolean isLimitReached(final RunTimeConfig rtConfig) {
+	public boolean isLimitReached(final BasicConfig rtConfig) {
 		//  time limitations
 		final TimeUnit loadLimitTimeUnit = rtConfig.getLoadLimitTimeUnit();
 		final long loadLimitTimeValue = rtConfig.getLoadLimitTimeValue();
@@ -80,7 +79,7 @@ implements LoadState<T> {
 	implements LoadState.Builder<T, U> {
 		//
 		private int loadNumber;
-		private RunTimeConfig runTimeConfig;
+		private BasicConfig appConfig;
 		private IOStats.Snapshot ioStatsSnapshot;
 		private T lastDataItem;
 		//
@@ -90,9 +89,8 @@ implements LoadState<T> {
 			return this;
 		}
 		//
-		@Override
-		public Builder<T, U> setRunTimeConfig(final RunTimeConfig runTimeConfig) {
-			this.runTimeConfig = runTimeConfig;
+		public Builder<T, U> setAppConfig(final BasicConfig appConfig) {
+			this.appConfig = appConfig;
 			return this;
 		}
 		//
@@ -118,16 +116,16 @@ implements LoadState<T> {
 	//
 	private BasicLoadState(final Builder<T, BasicLoadState<T>> builder) {
 		this.loadNumber = builder.loadNumber;
-		this.runTimeConfig = builder.runTimeConfig;
+		this.appConfig = builder.appConfig;
 		this.ioStatsSnapshot = builder.ioStatsSnapshot;
 		this.lastDataItem = builder.lastDataItem;
 	}
 	//
 	private static final Logger LOG = LogManager.getLogger();
 	//
-	public static void restoreScenarioState(final RunTimeConfig rtConfig) {
+	public static void restoreScenarioState(final BasicConfig rtConfig) {
 		final String fullStateFileName = Paths.get(
-			RunTimeConfig.DIR_ROOT, Constants.DIR_LOG, rtConfig.getRunId()
+			BasicConfig.DIR_ROOT, Constants.DIR_LOG, rtConfig.getRunId()
 		).resolve(Constants.STATES_FILE).toString();
 		//  if load states list is empty or file w/ load states doesn't exist, then init
 		//  map entry value w/ empty list
@@ -140,7 +138,7 @@ implements LoadState<T> {
 			if(loadStates != null && !loadStates.isEmpty()) {
 				//  check if immutable params were changed for load executors
 				for(final LoadState state : loadStates) {
-					if(rtConfig.isImmutableParamsChanged(state.getRunTimeConfig())) {
+					if(rtConfig.isImmutableParamsChanged(state.getAppConfig())) {
 						LOG.warn(
 							Markers.MSG,
 							"Run \"{}\": configuration immutability violated. Starting new run",
@@ -167,7 +165,7 @@ implements LoadState<T> {
 	}
 	//
 	public static boolean isSavedStateOfRunExists(final String runId) {
-		final String fullStateFileName = Paths.get(RunTimeConfig.DIR_ROOT,
+		final String fullStateFileName = Paths.get(BasicConfig.DIR_ROOT,
 			Constants.DIR_LOG, runId).resolve(Constants.STATES_FILE).toString();
 		final File stateFile = new File(fullStateFileName);
 		return stateFile.exists();
@@ -210,7 +208,7 @@ implements LoadState<T> {
 	//
 	@SuppressWarnings("unchecked")
 	public static <T extends Item> LoadState<T> findStateByLoadNumber(
-		final int loadNumber, final RunTimeConfig rtConfig
+		final int loadNumber, final BasicConfig rtConfig
 	) {
 		final List<LoadState<?>>
 			loadStates = LoadExecutor.RESTORED_STATES_MAP.get(rtConfig.getRunId());
@@ -223,7 +221,7 @@ implements LoadState<T> {
 	}
 	//
 	public static boolean isRunFinished(
-		final RunTimeConfig rtConfig, final List<LoadState> states
+		final BasicConfig rtConfig, final List<LoadState> states
 	) {
 		final TimeUnit loadLimitTimeUnit = rtConfig.getLoadLimitTimeUnit();
 		final long loadLimitTimeValue = rtConfig.getLoadLimitTimeValue();
@@ -260,7 +258,7 @@ implements LoadState<T> {
 	//
 	public static void saveRunState(final String runId, final List<LoadState> loadStates) {
 		final String fullStateFileName = Paths
-			.get(RunTimeConfig.DIR_ROOT, Constants.DIR_LOG, runId)
+			.get(BasicConfig.DIR_ROOT, Constants.DIR_LOG, runId)
 			.resolve(Constants.STATES_FILE)
 			.toString();
 		try(final FileOutputStream fos = new FileOutputStream(fullStateFileName, false)) {

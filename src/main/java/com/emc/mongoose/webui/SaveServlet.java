@@ -2,7 +2,7 @@ package com.emc.mongoose.webui;
 // mongoose-common.jar
 import com.emc.mongoose.common.conf.Constants;
 import com.emc.mongoose.common.conf.JsonConfigLoader;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 //
@@ -32,7 +32,7 @@ extends CommonServlet {
 	private final static String FNAME_CONF_SAVE = "config.txt";
 	private final static File
 		DIR_WEBAPP_CONF = Paths.get(
-			RunTimeConfig.DIR_ROOT, Constants.DIR_WEBAPP, Constants.DIR_CONF
+			BasicConfig.DIR_ROOT, Constants.DIR_WEBAPP, Constants.DIR_CONF
 		).toFile();
 	//	HTTP Headers
 	private final static String CONTENT_TYPE = "Content-Type";
@@ -66,11 +66,11 @@ extends CommonServlet {
 	@Override
 	public void doPost(final HttpServletRequest request, final HttpServletResponse response) {
 		setupRunTimeConfig(request);
-		new JsonConfigLoader(runTimeConfig).updateJsonCfgFile(
-			Paths.get(RunTimeConfig.DIR_ROOT, Constants.DIR_CONF)
-				.resolve(RunTimeConfig.FNAME_CONF).toFile()
+		new JsonConfigLoader(appConfig).updateJsonCfgFile(
+			Paths.get(BasicConfig.DIR_ROOT, Constants.DIR_CONF)
+				.resolve(BasicConfig.FNAME_CONF).toFile()
 		);
-		updateLastRunTimeConfig(runTimeConfig);
+		updateLastRunTimeConfig(appConfig);
 		response.setStatus(HttpServletResponse.SC_OK);
 	}
 	//
@@ -83,8 +83,8 @@ extends CommonServlet {
 		}
 		try (final FileWriter writer = new FileWriter(DIR_WEBAPP_CONF + File.separator + FNAME_CONF_SAVE)) {
 			final PropertiesConfiguration props = new PropertiesConfiguration();
-			for (String key : runTimeConfig.getMongooseKeys()) {
-				props.setProperty(key, runTimeConfig.getProperty(key));
+			for (String key : appConfig.getMongooseKeys()) {
+				props.setProperty(key, appConfig.getProperty(key));
 			}
 			try {
 				props.save(writer);

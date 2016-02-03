@@ -4,7 +4,7 @@ import com.codahale.metrics.Clock;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.common.net.ServiceUtil;
@@ -100,7 +100,7 @@ implements StorageIOStats {
 		//
 		if(jmxServeFlag) {
 			final MBeanServer mBeanServer = ServiceUtil.getMBeanServer(
-				RunTimeConfig.getContext().getRemotePortMonitor()
+				BasicConfig.getContext().getRemotePortMonitor()
 			);
 			jmxReporter = CustomJmxReporter.forRegistry(metricRegistry)
 				.convertDurationsTo(TimeUnit.SECONDS)

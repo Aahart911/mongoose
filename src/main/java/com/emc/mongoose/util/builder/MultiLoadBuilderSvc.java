@@ -1,7 +1,7 @@
 package com.emc.mongoose.util.builder;
 //
 import com.emc.mongoose.common.concurrent.GroupThreadFactory;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 import com.emc.mongoose.core.api.item.container.Directory;
 import com.emc.mongoose.core.api.item.data.FileItem;
@@ -38,7 +38,7 @@ implements LoadBuilderSvc {
 	//
 	private final List<LoadBuilderSvc> loadBuilderSvcs = new ArrayList<>();
 	//
-	public MultiLoadBuilderSvc(final RunTimeConfig rtConfig)
+	public MultiLoadBuilderSvc(final BasicConfig rtConfig)
 	throws RemoteException {
 		loadBuilderSvcs.add(new BasicWSContainerLoadBuilderSvc(rtConfig));
 		loadBuilderSvcs.add(new BasicWSDataLoadBuilderSvc(rtConfig));
@@ -133,7 +133,7 @@ implements LoadBuilderSvc {
 	}
 	//
 	@Override
-	public final LoadBuilderSvc setRunTimeConfig(final RunTimeConfig props)
+	public final LoadBuilderSvc setRunTimeConfig(final BasicConfig props)
 	throws IllegalStateException, RemoteException {
 		for(final LoadBuilderSvc loadBuilderSvc : loadBuilderSvcs) {
 			loadBuilderSvc.setRunTimeConfig(props);
@@ -162,73 +162,37 @@ implements LoadBuilderSvc {
 	}
 	//
 	@Override
-	public final LoadBuilderSvc setMaxCount(final long maxCount)
+	public final LoadBuilderSvc setLimitCount(final long maxCount)
 	throws IllegalArgumentException, RemoteException {
 		for(final LoadBuilderSvc loadBuilderSvc : loadBuilderSvcs) {
-			loadBuilderSvc.setMaxCount(maxCount);
+			loadBuilderSvc.setLimitCount(maxCount);
 		}
 		return this;
 	}
 	//
 	@Override
-	public final LoadBuilderSvc setManualTaskSleepMicroSecs(final int manualTaskSleepMicroSec)
+	public final LoadBuilderSvc setLimitRate(final float rateLimit)
 	throws IllegalArgumentException, RemoteException {
 		for(final LoadBuilderSvc loadBuilderSvc : loadBuilderSvcs) {
-			loadBuilderSvc.setManualTaskSleepMicroSecs(manualTaskSleepMicroSec);
+			loadBuilderSvc.setLimitRate(rateLimit);
 		}
 		return this;
 	}
 	//
 	@Override
-	public final LoadBuilderSvc setRateLimit(final float rateLimit)
+	public final LoadBuilderSvc setThreadCount(final int connCount)
 	throws IllegalArgumentException, RemoteException {
 		for(final LoadBuilderSvc loadBuilderSvc : loadBuilderSvcs) {
-			loadBuilderSvc.setRateLimit(rateLimit);
+			loadBuilderSvc.setThreadCount(connCount);
 		}
 		return this;
 	}
 	//
 	@Override
-	public final LoadBuilderSvc setWorkerCountDefault(final int threadCount)
-	throws RemoteException {
-		for(final LoadBuilderSvc loadBuilderSvc : loadBuilderSvcs) {
-			loadBuilderSvc.setWorkerCountDefault(threadCount);
-		}
-		return this;
-	}
-	//
-	@Override
-	public final LoadBuilderSvc setWorkerCountFor(final int threadCount, final IOTask.Type loadType)
-	throws RemoteException {
-		for(final LoadBuilderSvc loadBuilderSvc : loadBuilderSvcs) {
-			loadBuilderSvc.setWorkerCountFor(threadCount, loadType);
-		}
-		return this;
-	}
-	//
-	@Override
-	public final LoadBuilderSvc setConnPerNodeDefault(final int connCount)
+	public final LoadBuilderSvc setNodeAddrs(final String[] nodeAddrs)
 	throws IllegalArgumentException, RemoteException {
 		for(final LoadBuilderSvc loadBuilderSvc : loadBuilderSvcs) {
-			loadBuilderSvc.setConnPerNodeDefault(connCount);
-		}
-		return this;
-	}
-	//
-	@Override
-	public final LoadBuilderSvc setConnPerNodeFor(final int connCount, final IOTask.Type loadType)
-	throws IllegalArgumentException, RemoteException {
-		for(final LoadBuilderSvc loadBuilderSvc : loadBuilderSvcs) {
-			loadBuilderSvc.setConnPerNodeFor(connCount, loadType);
-		}
-		return this;
-	}
-	//
-	@Override
-	public final LoadBuilderSvc setDataNodeAddrs(final String[] dataNodeAddrs)
-	throws IllegalArgumentException, RemoteException {
-		for(final LoadBuilderSvc loadBuilderSvc : loadBuilderSvcs) {
-			loadBuilderSvc.setDataNodeAddrs(dataNodeAddrs);
+			loadBuilderSvc.setNodeAddrs(nodeAddrs);
 		}
 		return this;
 	}

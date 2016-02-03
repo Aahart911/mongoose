@@ -1,6 +1,6 @@
 package com.emc.mongoose.run.scenario;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 //
@@ -33,10 +33,10 @@ implements Runnable {
 	private long timeOut;
 	private TimeUnit timeUnit;
 	//
-	public Single(final RunTimeConfig rtConfig) {
+	public Single(final BasicConfig rtConfig) {
 		try(final LoadBuilder loadBuilder = LoadBuilderFactory.getInstance(rtConfig)) {
 			final IOTask.Type loadType = IOTask.Type.valueOf(
-				rtConfig.getString(RunTimeConfig.KEY_SCENARIO_SINGLE_LOAD).toUpperCase());
+				rtConfig.getString(BasicConfig.KEY_SCENARIO_SINGLE_LOAD).toUpperCase());
 			LOG.debug(Markers.MSG, "Using load type: {}", loadType.name());
 			loadBuilder.setLoadType(loadType);
 			//
@@ -77,12 +77,12 @@ implements Runnable {
 	public static void main(final String... args) {
 		//
 		try {
-			RunTimeConfig.initContext();
-			final RunTimeConfig runTimeConfig = RunTimeConfig.getContext();
+			BasicConfig.initContext();
+			final BasicConfig ctxConfig = BasicConfig.getContext();
 			//
-			LOG.info(Markers.MSG, runTimeConfig);
+			LOG.info(Markers.MSG, ctxConfig);
 			//
-			final Single singleLoadScenario = new Single(runTimeConfig);
+			final Single singleLoadScenario = new Single(ctxConfig);
 			singleLoadScenario.run();
 			LOG.info(Markers.MSG, "Scenario end");
 		} catch(final Exception e) {

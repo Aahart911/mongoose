@@ -1,6 +1,6 @@
 package com.emc.mongoose.storage.adapter.s3;
 // mongoose-common.jar
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 // mongoose-core-api.jar
@@ -54,7 +54,7 @@ extends WSRequestConfigBase<T, C> {
 	protected WSRequestConfigImpl(final WSRequestConfigImpl<T, C> reqConf2Clone)
 	throws NoSuchAlgorithmException {
 		super(reqConf2Clone);
-		authPrefixValue = runTimeConfig.getApiS3AuthPrefix() + " ";
+		authPrefixValue = appConfig.getApiS3AuthPrefix() + " ";
 		if(reqConf2Clone != null) {
 			setNameSpace(reqConf2Clone.getNameSpace());
 		}
@@ -83,11 +83,11 @@ extends WSRequestConfigBase<T, C> {
 	}
 	//
 	@Override @SuppressWarnings("unchecked")
-	public final WSRequestConfigImpl<T, C> setRunTimeConfig(final RunTimeConfig runTimeConfig) {
-		super.setRunTimeConfig(runTimeConfig);
+	public final WSRequestConfigImpl<T, C> setAppConfig(final BasicConfig appConfig) {
+		super.setAppConfig(appConfig);
 		//
 		try {
-			setContainer((C) new BasicContainer<T>(this.runTimeConfig.getString(KEY_BUCKET_NAME)));
+			setContainer((C) new BasicContainer<T>(this.appConfig.getString(KEY_BUCKET_NAME)));
 		} catch(final NoSuchElementException e) {
 			LOG.error(Markers.ERR, MSG_TMPL_NOT_SPECIFIED, KEY_BUCKET_NAME);
 		}
@@ -215,7 +215,7 @@ extends WSRequestConfigBase<T, C> {
 			LOG.debug(Markers.MSG, "Bucket \"{}\" doesn't exist, trying to create", container);
 			bucket.create(storageNodeAddrs[0]);
 			if(bucket.exists(storageNodeAddrs[0])) {
-				runTimeConfig.set(KEY_BUCKET_NAME, container.getName());
+				appConfig.set(KEY_BUCKET_NAME, container.getName());
 			} else {
 				throw new IllegalStateException(
 					String.format(FMT_MSG_ERR_BUCKET_NOT_EXIST, container.getName())

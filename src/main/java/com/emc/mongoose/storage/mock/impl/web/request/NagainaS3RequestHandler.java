@@ -1,6 +1,6 @@
 package com.emc.mongoose.storage.mock.impl.web.request;
 
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.core.api.io.conf.WSRequestConfig;
@@ -53,7 +53,7 @@ public class NagainaS3RequestHandler<T extends WSObjectMock> extends NagainaRequ
 	private final static Logger LOG = LogManager.getLogger();
 	private final static DocumentBuilder DOM_BUILDER;
 	private final static TransformerFactory TF = TransformerFactory.newInstance();
-	private final static String S3_AUTH_PREFIX = RunTimeConfig.getContext().getApiS3AuthPrefix() + " ";
+	private final static String S3_AUTH_PREFIX = BasicConfig.getContext().getApiS3AuthPrefix() + " ";
 
 	static {
 		try {
@@ -63,7 +63,7 @@ public class NagainaS3RequestHandler<T extends WSObjectMock> extends NagainaRequ
 		}
 	}
 
-	public NagainaS3RequestHandler(RunTimeConfig rtConfig, WSMock<T> sharedStorage) {
+	public NagainaS3RequestHandler(BasicConfig rtConfig, WSMock<T> sharedStorage) {
 		super(rtConfig, sharedStorage);
 	}
 

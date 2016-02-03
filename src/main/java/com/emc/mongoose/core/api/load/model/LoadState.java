@@ -1,6 +1,6 @@
 package com.emc.mongoose.core.api.load.model;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.core.api.item.base.Item;
 import com.emc.mongoose.core.api.load.model.metrics.IOStats;
 //
@@ -13,19 +13,19 @@ extends Serializable {
 	//
 	int getLoadNumber();
 	//
-	RunTimeConfig getRunTimeConfig();
+	BasicConfig getAppConfig();
 	//
 	IOStats.Snapshot getStatsSnapshot();
 	//
 	T getLastDataItem();
 	//
-	boolean isLimitReached(final RunTimeConfig rtConfig);
+	boolean isLimitReached(final BasicConfig rtConfig);
 	//
 	interface Builder<T extends Item, U extends LoadState<T>> {
 		//
 		Builder<T, U> setLoadNumber(final int loadNumber);
 		//
-		Builder<T, U> setRunTimeConfig(final RunTimeConfig runTimeConfig);
+		Builder<T, U> setAppConfig(final BasicConfig appConfig);
 		//
 		Builder<T, U> setStatsSnapshot(final IOStats.Snapshot ioStatsSnapshot);
 		//

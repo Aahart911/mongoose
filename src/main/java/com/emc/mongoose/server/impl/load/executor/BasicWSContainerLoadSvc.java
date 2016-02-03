@@ -1,6 +1,6 @@
 package com.emc.mongoose.server.impl.load.executor;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.common.net.Service;
@@ -35,14 +35,13 @@ implements WSContainerLoadSvc<T, C> {
 	private final static Logger LOG = LogManager.getLogger();
 	//
 	public BasicWSContainerLoadSvc(
-		final RunTimeConfig runTimeConfig, final WSRequestConfig reqConfig, final String[] addrs,
+		final BasicConfig appConfig, final WSRequestConfig reqConfig, final String[] addrs,
 		final int connPerNode, final int threadsPerNode,
-		final ItemSrc<C> itemSrc, final long maxCount,
-		final int manualTaskSleepMicroSecs, final float rateLimit
+		final ItemSrc<C> itemSrc, final long maxCount, final float rateLimit
 	) {
 		super(
-			runTimeConfig, reqConfig, addrs, connPerNode, threadsPerNode, itemSrc, maxCount,
-			manualTaskSleepMicroSecs, rateLimit
+			appConfig, reqConfig, addrs, connPerNode, threadsPerNode, itemSrc, maxCount,
+			rateLimit
 		);
 	}
 	//

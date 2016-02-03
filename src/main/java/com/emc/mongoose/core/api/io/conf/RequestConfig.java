@@ -3,7 +3,7 @@ package com.emc.mongoose.core.api.io.conf;
 import com.emc.mongoose.core.api.item.container.Container;
 import com.emc.mongoose.core.api.item.data.DataItem;
 // mongoose-common.jar
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 import java.io.Closeable;
 /**
@@ -39,8 +39,7 @@ extends IOConfig<T, C>, Closeable {
 	String getSecret();
 	RequestConfig<T, C> setSecret(final String secret);
 	//
-	@Override
-	RequestConfig<T, C> setRunTimeConfig(final RunTimeConfig props);
+	RequestConfig<T, C> setAppConfig(final BasicConfig props);
 	//
 	void configureStorage(final String storageAddrs[])
 	throws IllegalStateException;

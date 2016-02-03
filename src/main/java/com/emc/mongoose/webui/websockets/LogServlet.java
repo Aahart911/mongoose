@@ -1,6 +1,6 @@
 package com.emc.mongoose.webui.websockets;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
@@ -14,7 +14,7 @@ extends WebSocketServlet {
 	//
 	@Override
 	public final void configure(final WebSocketServletFactory factory) {
-		final String[] websocketIdleTimeoutArray = RunTimeConfig.getContext()
+		final String[] websocketIdleTimeoutArray = BasicConfig.getContext()
 			.getWebUIWSTimeout().split("\\.");
 		factory.register(LogSocket.class);
 		factory.getPolicy().setIdleTimeout(TimeUnit.valueOf(websocketIdleTimeoutArray[1].toUpperCase())

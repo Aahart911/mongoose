@@ -1,6 +1,6 @@
 package com.emc.mongoose.server.impl.load.executor;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.common.net.Service;
@@ -34,14 +34,13 @@ implements DirectoryLoadSvc<T, C> {
 	private final static Logger LOG = LogManager.getLogger();
 	//
 	public BasicDirectoryLoadSvc(
-		final RunTimeConfig runTimeConfig, final FileIOConfig<T, C> ioConfig, final String[] addrs,
+		final BasicConfig appConfig, final FileIOConfig<T, C> ioConfig, final String[] addrs,
 		final int connPerNode, final int threadsPerNode,
-		final ItemSrc<C> itemSrc, final long maxCount,
-		final int manualTaskSleepMicroSecs, final float rateLimit
+		final ItemSrc<C> itemSrc, final long maxCount, final float rateLimit
 	) {
 		super(
-			runTimeConfig, ioConfig, addrs, connPerNode, threadsPerNode, itemSrc, maxCount,
-			manualTaskSleepMicroSecs, rateLimit
+			appConfig, ioConfig, addrs, connPerNode, threadsPerNode, itemSrc, maxCount,
+			rateLimit
 		);
 	}
 	//

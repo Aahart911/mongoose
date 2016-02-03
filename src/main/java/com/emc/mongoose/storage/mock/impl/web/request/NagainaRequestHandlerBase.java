@@ -1,6 +1,6 @@
 package com.emc.mongoose.storage.mock.impl.web.request;
 
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.core.api.io.conf.WSRequestConfig;
@@ -61,7 +61,7 @@ public abstract class NagainaRequestHandlerBase<T extends WSObjectMock> extends 
 	protected final String ctxWriteFlagKey = "ctxWriteFlagKey";
 	protected final String handlerStatus = "handlerStatus";
 
-	public NagainaRequestHandlerBase(RunTimeConfig rtConfig, WSMock<T> sharedStorage) {
+	public NagainaRequestHandlerBase(BasicConfig rtConfig, WSMock<T> sharedStorage) {
 		this.rateLimit = rtConfig.getLoadLimitRate();
 		this.batchSize = rtConfig.getBatchSize();
 		this.sharedStorage = sharedStorage;
@@ -201,7 +201,7 @@ public abstract class NagainaRequestHandlerBase<T extends WSObjectMock> extends 
 				rangeValues = rangeValues.substring(
 						VALUE_RANGE_PREFIX.length(), rangeValues.length()
 				);
-				String[] ranges = rangeValues.split(RunTimeConfig.LIST_SEP);
+				String[] ranges = rangeValues.split(BasicConfig.LIST_SEP);
 				for (String range : ranges) {
 					String[] rangeBorders = range.split(VALUE_RANGE_CONCAT);
 					if (rangeBorders.length == 1) {

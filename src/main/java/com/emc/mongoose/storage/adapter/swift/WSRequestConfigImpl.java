@@ -1,6 +1,6 @@
 package com.emc.mongoose.storage.adapter.swift;
 // mongoose-common.jar
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.Markers;
 // mongoose-core-api.jar
 import com.emc.mongoose.core.api.item.container.Container;
@@ -61,17 +61,17 @@ extends WSRequestConfigBase<T, C> {
 			setContainer(reqConf2Clone.getContainer());
 		}
 		//
-		final RunTimeConfig localConfig = RunTimeConfig.getContext();
+		final BasicConfig localConfig = BasicConfig.getContext();
 		if(uriSvcBasePath == null) {
 			uriSvcBasePath = localConfig.getString(KEY_CONF_SVC_BASEPATH);
 		}
 		if(authToken == null) {
-			setAuthToken(new WSAuthTokenImpl<>(this, localConfig.getString(RunTimeConfig.KEY_API_SWIFT_AUTH_TOKEN)));
+			setAuthToken(new WSAuthTokenImpl<>(this, localConfig.getString(BasicConfig.KEY_API_SWIFT_AUTH_TOKEN)));
 		}
 		if(container == null) {
 			setContainer(
 				(C) new BasicContainer<T>(
-					localConfig.getString(RunTimeConfig.KEY_API_SWIFT_CONTAINER)
+					localConfig.getString(BasicConfig.KEY_API_SWIFT_CONTAINER)
 				)
 			);
 		}
@@ -132,25 +132,25 @@ extends WSRequestConfigBase<T, C> {
 	}
 	//
 	@Override @SuppressWarnings("unchecked")
-	public WSRequestConfigImpl<T, C> setRunTimeConfig(final RunTimeConfig runTimeConfig) {
-		super.setRunTimeConfig(runTimeConfig);
+	public WSRequestConfigImpl<T, C> setAppConfig(final BasicConfig appConfig) {
+		super.setAppConfig(appConfig);
 		//
-		if(runTimeConfig.containsKey(KEY_CONF_SVC_BASEPATH)) {
-			uriSvcBasePath = runTimeConfig.getString(KEY_CONF_SVC_BASEPATH);
+		if(appConfig.containsKey(KEY_CONF_SVC_BASEPATH)) {
+			uriSvcBasePath = appConfig.getString(KEY_CONF_SVC_BASEPATH);
 		} else {
 			LOG.error(Markers.ERR, "Swift base uri path is not specified");
 		}
 		//
-		if(runTimeConfig.containsKey(RunTimeConfig.KEY_API_SWIFT_AUTH_TOKEN)) {
-			authToken = new WSAuthTokenImpl<>(this, runTimeConfig.getString(RunTimeConfig.KEY_API_SWIFT_AUTH_TOKEN));
+		if(appConfig.containsKey(BasicConfig.KEY_API_SWIFT_AUTH_TOKEN)) {
+			authToken = new WSAuthTokenImpl<>(this, appConfig.getString(BasicConfig.KEY_API_SWIFT_AUTH_TOKEN));
 		} else {
 			LOG.error(Markers.ERR, "Swift auth token is not specified");
 		}
 		//
-		if(runTimeConfig.containsKey(RunTimeConfig.KEY_API_SWIFT_CONTAINER)) {
+		if(appConfig.containsKey(BasicConfig.KEY_API_SWIFT_CONTAINER)) {
 			setContainer(
 				(C) new BasicContainer<T>(
-					runTimeConfig.getString(RunTimeConfig.KEY_API_SWIFT_CONTAINER)
+					appConfig.getString(BasicConfig.KEY_API_SWIFT_CONTAINER)
 				)
 			);
 		} else {
@@ -238,7 +238,7 @@ extends WSRequestConfigBase<T, C> {
 			throw new IllegalStateException("No auth token was created");
 		}
 		sharedHeaders.updateHeader(new BasicHeader(KEY_X_AUTH_TOKEN, authTokenValue));
-		runTimeConfig.set(RunTimeConfig.KEY_API_SWIFT_AUTH_TOKEN, authTokenValue);
+		appConfig.set(BasicConfig.KEY_API_SWIFT_AUTH_TOKEN, authTokenValue);
 		// configure a container
 		if(container == null) {
 			throw new IllegalStateException("Container is not specified");
@@ -249,7 +249,7 @@ extends WSRequestConfigBase<T, C> {
 		} else {
 			containerHelper.create(storageNodeAddrs[0]);
 			if(containerHelper.exists(storageNodeAddrs[0])) {
-				runTimeConfig.set(RunTimeConfig.KEY_API_SWIFT_CONTAINER, container.getName());
+				appConfig.set(BasicConfig.KEY_API_SWIFT_CONTAINER, container.getName());
 			} else {
 				throw new IllegalStateException(
 					String.format("Container \"%s\" still doesn't exist", container)

@@ -1,6 +1,6 @@
 package com.emc.mongoose.integ.feature.core;
 
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 //
 import com.emc.mongoose.common.log.Markers;
@@ -35,12 +35,12 @@ extends WSMockTestBase {
 	@BeforeClass
 	public static void setUpClass()
 	throws Exception {
-		System.setProperty(RunTimeConfig.KEY_RUN_ID, InfiniteWriteTest.class.getCanonicalName());
+		System.setProperty(BasicConfig.KEY_RUN_ID, InfiniteWriteTest.class.getCanonicalName());
 		WSMockTestBase.setUpClass();
 		//
 		final String
-			gooseName = RunTimeConfig.getContext().getRunName(),
-			gooseVersion = RunTimeConfig.getContext().getRunVersion();
+			gooseName = BasicConfig.getContext().getRunName(),
+			gooseVersion = BasicConfig.getContext().getRunVersion();
 		final File
 			gooseTgzFile = Paths.get("build", "dist", gooseName + "-" + gooseVersion + ".tgz").toFile(),
 			gooseJarFile = Paths.get(gooseName + "-" + gooseVersion, gooseName + ".jar").toFile();

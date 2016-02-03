@@ -3,7 +3,7 @@ package com.emc.mongoose.core.impl.load.executor;
 import com.emc.mongoose.common.concurrent.GroupThreadFactory;
 import com.emc.mongoose.common.concurrent.LifeCycle;
 import com.emc.mongoose.common.conf.Constants;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 // mongoose-core-api.jar
@@ -60,7 +60,7 @@ implements LoadExecutor<T> {
 	protected final int instanceNum, storageNodeCount;
 	protected final String storageNodeAddrs[];
 	//
-	protected final RunTimeConfig rtConfig;
+	protected final BasicConfig rtConfig;
 	//
 	protected final ContentSource dataSrc;
 	protected final IOConfig<? extends DataItem, ? extends Container<? extends DataItem>>
@@ -163,7 +163,7 @@ implements LoadExecutor<T> {
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	protected LoadExecutorBase(
-		final RunTimeConfig rtConfig,
+		final BasicConfig rtConfig,
 		final IOConfig<? extends DataItem, ? extends Container<? extends DataItem>> ioConfig,
 		final String addrs[], final int connCountPerNode, final int threadCount,
 		final ItemSrc<T> itemSrc, final long maxCount,
@@ -232,7 +232,7 @@ implements LoadExecutor<T> {
 	}
 	//
 	private LoadExecutorBase(
-		final RunTimeConfig rtConfig,
+		final BasicConfig rtConfig,
 		final IOConfig<? extends DataItem, ? extends Container<? extends DataItem>> ioConfig,
 		final String addrs[], final int connCountPerNode, final int threadCount,
 		final ItemSrc<T> itemSrc, final long maxCount, final int instanceNum
@@ -248,7 +248,7 @@ implements LoadExecutor<T> {
 	}
 	//
 	protected LoadExecutorBase(
-		final RunTimeConfig rtConfig,
+		final BasicConfig rtConfig,
 		final IOConfig<? extends DataItem, ? extends Container<? extends DataItem>> ioConfig,
 		final String addrs[], final int connCountPerNode, final int threadCount,
 		final ItemSrc<T> itemSrc, final long maxCount
@@ -856,7 +856,7 @@ implements LoadExecutor<T> {
 	throws RemoteException {
 		return new BasicLoadState.Builder<T, BasicLoadState<T>>()
 			.setLoadNumber(instanceNum)
-			.setRunTimeConfig(rtConfig)
+			.setAppConfig(rtConfig)
 			.setStatsSnapshot(lastStats)
 			.setLastDataItem(lastItem)
 			.build();
@@ -873,9 +873,9 @@ implements LoadExecutor<T> {
 	//
 	private void setCountLimitConfig(final long itemsCount) {
 		if(isDoneAllSubm() && (maxCount > itemsCount)) {
-			rtConfig.set(RunTimeConfig.KEY_DATA_ITEM_COUNT, itemsCount);
+			rtConfig.set(BasicConfig.KEY_DATA_ITEM_COUNT, itemsCount);
 		} else {
-			rtConfig.set(RunTimeConfig.KEY_DATA_ITEM_COUNT, maxCount);
+			rtConfig.set(BasicConfig.KEY_DATA_ITEM_COUNT, maxCount);
 		}
 	}
 	//

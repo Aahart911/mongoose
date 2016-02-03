@@ -1,7 +1,7 @@
 package com.emc.mongoose.util.builder;
 //
 import com.emc.mongoose.common.conf.Constants;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 import com.emc.mongoose.core.api.item.base.Item;
 import com.emc.mongoose.core.api.load.builder.LoadBuilder;
@@ -30,14 +30,14 @@ public class LoadBuilderFactory {
 	//
 	@SuppressWarnings("unchecked")
 	public static <T extends Item, U extends LoadExecutor<T>> LoadBuilder<T, U> getInstance(
-		final RunTimeConfig rtConfig
+		final BasicConfig rtConfig
 	) {
 		LoadBuilder loadBuilderInstance;
 		try {
 			final Class loadBuilderImplClass = getLoadBuilderClass(
 				rtConfig.getRunMode(), rtConfig.getItemClass()
 			);
-			final Constructor constructor = loadBuilderImplClass.getConstructor(RunTimeConfig.class);
+			final Constructor constructor = loadBuilderImplClass.getConstructor(BasicConfig.class);
 			loadBuilderInstance = (LoadBuilder) constructor.newInstance(rtConfig);
 		} catch(final Exception e) {
 			e.printStackTrace(System.out);

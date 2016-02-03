@@ -1,7 +1,7 @@
 package com.emc.mongoose.core.impl.load.tasks;
 // mongoose-common.jar
 import com.emc.mongoose.common.conf.Constants;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.common.log.LogUtil;
 // mongoose-core-api.jar
@@ -60,7 +60,7 @@ implements Runnable {
 				hookTask, String.format("loadCloseHook<%s>", hookTask.loadName)
 			);
 			Runtime.getRuntime().addShutdownHook(hookThread);
-			final String currRunId = RunTimeConfig.getContext().getRunId();
+			final String currRunId = BasicConfig.getContext().getRunId();
 			synchronized(HOOKS_MAP) {
 				Map<LoadExecutor, Thread> runLoadHooks = HOOKS_MAP.get(currRunId);
 				if(runLoadHooks == null) {
@@ -83,9 +83,9 @@ implements Runnable {
 	public static void del(final LoadExecutor loadExecutor) {
 		String currRunId;
 		try {
-			currRunId = loadExecutor.getLoadState().getRunTimeConfig().getRunId();
+			currRunId = loadExecutor.getLoadState().getAppConfig().getRunId();
 		} catch (final RemoteException e) {
-			currRunId = RunTimeConfig.getContext().getRunId();
+			currRunId = BasicConfig.getContext().getRunId();
 			LogUtil.exception(LOG, Level.ERROR, e, "Unexpected failure");
 		}
 		synchronized(HOOKS_MAP) {
@@ -118,7 +118,7 @@ implements Runnable {
 						}
 						//
 						if(runHooks.isEmpty()) {
-							final RunTimeConfig rtConfig = currState.getRunTimeConfig();
+							final BasicConfig rtConfig = currState.getAppConfig();
 							if(!BasicLoadState.isRunFinished(rtConfig, runLoadStates)) {
 								if(Constants.RUN_MODE_STANDALONE.equals(rtConfig.getRunMode())) {
 									final int loadJobCount = runLoadStates.size();

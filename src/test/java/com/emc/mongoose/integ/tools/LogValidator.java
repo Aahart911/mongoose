@@ -1,7 +1,7 @@
 package com.emc.mongoose.integ.tools;
 
 import com.emc.mongoose.common.conf.Constants;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.junit.Assert;
@@ -20,7 +20,7 @@ public final class LogValidator {
 
 	public static void removeLogDirectory(final String runID)
 	throws Exception {
-		final Path logDir = Paths.get(RunTimeConfig.DIR_ROOT,
+		final Path logDir = Paths.get(BasicConfig.DIR_ROOT,
 			Constants.DIR_LOG, runID);
 		removeDirectory(logDir);
 	}
@@ -39,32 +39,32 @@ public final class LogValidator {
 	}
 
 	public static File getMessageFile(final String runID){
-		return new File(Paths.get(RunTimeConfig.DIR_ROOT,
+		return new File(Paths.get(BasicConfig.DIR_ROOT,
 			Constants.DIR_LOG, runID, TestConstants.MESSAGE_FILE_NAME).toString());
 	}
 
 	public static File getPerfAvgFile(final String runID){
-		return new File(Paths.get(RunTimeConfig.DIR_ROOT,
+		return new File(Paths.get(BasicConfig.DIR_ROOT,
 			Constants.DIR_LOG, runID, TestConstants.PERF_AVG_FILE_NAME).toString());
 	}
 
 	public static File getPerfSumFile(final String runID){
-		return new File(Paths.get(RunTimeConfig.DIR_ROOT,
+		return new File(Paths.get(BasicConfig.DIR_ROOT,
 			Constants.DIR_LOG, runID, TestConstants.PERF_SUM_FILE_NAME).toString());
 	}
 
 	public static File getPerfTraceFile(final String runID){
-		return new File(Paths.get(RunTimeConfig.DIR_ROOT,
+		return new File(Paths.get(BasicConfig.DIR_ROOT,
 			Constants.DIR_LOG, runID, TestConstants.PERF_TRACE_FILE_NAME).toString());
 	}
 
 	public static File getItemsListFile(final String runID){
-		return new File(Paths.get(RunTimeConfig.DIR_ROOT,
+		return new File(Paths.get(BasicConfig.DIR_ROOT,
 			Constants.DIR_LOG, runID, TestConstants.ITEMS_FILE_NAME).toString());
 	}
 
 	public static File getErrorsFile(final String runID){
-		return new File(Paths.get(RunTimeConfig.DIR_ROOT,
+		return new File(Paths.get(BasicConfig.DIR_ROOT,
 			Constants.DIR_LOG, runID, TestConstants.ERR_FILE_NAME).toString());
 	}
 	//

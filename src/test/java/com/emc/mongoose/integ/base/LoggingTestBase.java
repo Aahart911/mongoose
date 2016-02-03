@@ -1,7 +1,7 @@
 package com.emc.mongoose.integ.base;
 //
 import com.emc.mongoose.common.conf.Constants;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.integ.tools.StdOutUtil;
@@ -40,15 +40,15 @@ extends ConfiguredTestBase {
 		}
 		LogUtil.init();
 		ConfiguredTestBase.setUpClass();
-		final String runId = System.getProperty(RunTimeConfig.KEY_RUN_ID);
+		final String runId = System.getProperty(BasicConfig.KEY_RUN_ID);
 		LogValidator.removeLogDirectory(runId);
 		FILE_LOG_PERF_SUM = LogValidator.getPerfSumFile(runId);
 		FILE_LOG_PERF_AVG = LogValidator.getPerfAvgFile(runId);
 		FILE_LOG_DATA_ITEMS = LogValidator.getItemsListFile(runId);
 		FILE_LOG_PERF_TRACE = LogValidator.getPerfTraceFile(runId);
-		final RunTimeConfig rtConfig = RunTimeConfig.getContext();
-		rtConfig.set(RunTimeConfig.KEY_RUN_ID, runId);
-		RunTimeConfig.setContext(rtConfig);
+		final BasicConfig rtConfig = BasicConfig.getContext();
+		rtConfig.set(BasicConfig.KEY_RUN_ID, runId);
+		BasicConfig.setContext(rtConfig);
 		LOG = LogManager.getLogger();
 	}
 	//

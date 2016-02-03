@@ -1,6 +1,6 @@
 package com.emc.mongoose.common.net;
 // mongoose-common.jar
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.exceptions.DuplicateSvcNameException;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
@@ -74,7 +74,7 @@ public abstract class ServiceUtil {
 	}*/
 	//
 	private static void rmiRegistryInit() {
-		final RunTimeConfig rtConfig = RunTimeConfig.getContext();
+		final BasicConfig rtConfig = BasicConfig.getContext();
 		REGISTRY_LOCK.lock();
 		try {
 			if(REGISTRY == null) {
@@ -96,7 +96,7 @@ public abstract class ServiceUtil {
 	}
 	//
 	public static void mBeanServerInit() {
-		final RunTimeConfig rtConfig = RunTimeConfig.getContext();
+		final BasicConfig rtConfig = BasicConfig.getContext();
 		if(rtConfig.getFlagServeJMX()) {
 			getMBeanServer(rtConfig.getRemotePortMonitor());
 		}

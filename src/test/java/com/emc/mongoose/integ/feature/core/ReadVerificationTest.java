@@ -1,6 +1,6 @@
 package com.emc.mongoose.integ.feature.core;
 
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.Markers;
 //
 import com.emc.mongoose.common.log.appenders.RunIdFileManager;
@@ -53,37 +53,37 @@ extends WSMockTestBase {
 	@BeforeClass
 	public static void setUpClass()
 	throws Exception{
-		System.setProperty(RunTimeConfig.KEY_RUN_ID, CREATE_RUN_ID);
+		System.setProperty(BasicConfig.KEY_RUN_ID, CREATE_RUN_ID);
 		WSMockTestBase.setUpClass();
 		//
-		RunTimeConfig rtConfig = RunTimeConfig.getContext();
-		rtConfig.set(RunTimeConfig.KEY_LOAD_LIMIT_COUNT, Integer.toString(LIMIT_COUNT));
-		rtConfig.set(RunTimeConfig.KEY_DATA_SIZE_MAX, DATA_SIZE);
-		rtConfig.set(RunTimeConfig.KEY_DATA_SIZE_MIN, DATA_SIZE);
-		rtConfig.set(RunTimeConfig.KEY_API_S3_BUCKET, TestConstants.BUCKET_NAME);
-		RunTimeConfig.setContext(rtConfig);
+		BasicConfig rtConfig = BasicConfig.getContext();
+		rtConfig.set(BasicConfig.KEY_LOAD_LIMIT_COUNT, Integer.toString(LIMIT_COUNT));
+		rtConfig.set(BasicConfig.KEY_DATA_SIZE_MAX, DATA_SIZE);
+		rtConfig.set(BasicConfig.KEY_DATA_SIZE_MIN, DATA_SIZE);
+		rtConfig.set(BasicConfig.KEY_API_S3_BUCKET, TestConstants.BUCKET_NAME);
+		BasicConfig.setContext(rtConfig);
 		//
 		final Logger logger = LogManager.getLogger();
-		logger.info(Markers.MSG, RunTimeConfig.getContext().toString());
+		logger.info(Markers.MSG, BasicConfig.getContext().toString());
 		//  write
 		new ScenarioRunner().run();
 		//
 		RunIdFileManager.flushAll();
 		//
-		System.setProperty(RunTimeConfig.KEY_RUN_ID, READ_RUN_ID);
+		System.setProperty(BasicConfig.KEY_RUN_ID, READ_RUN_ID);
 		LoggingTestBase.setUpClass();
 		//
-		rtConfig = RunTimeConfig.getContext();
-		rtConfig.set(RunTimeConfig.KEY_ITEM_SRC_FILE,
+		rtConfig = BasicConfig.getContext();
+		rtConfig.set(BasicConfig.KEY_ITEM_SRC_FILE,
 			LogValidator.getItemsListFile(CREATE_RUN_ID).getPath());
-		rtConfig.set(RunTimeConfig.KEY_SCENARIO_SINGLE_LOAD,
+		rtConfig.set(BasicConfig.KEY_SCENARIO_SINGLE_LOAD,
 			TestConstants.LOAD_READ.toLowerCase());
-		rtConfig.set(RunTimeConfig.KEY_DATA_CONTENT_FPATH, "conf/content/zerobytes");
+		rtConfig.set(BasicConfig.KEY_DATA_CONTENT_FPATH, "conf/content/zerobytes");
 		ContentSourceBase.DEFAULT = null;
-		rtConfig.set(RunTimeConfig.KEY_API_S3_BUCKET, TestConstants.BUCKET_NAME);
-		RunTimeConfig.setContext(rtConfig);
+		rtConfig.set(BasicConfig.KEY_API_S3_BUCKET, TestConstants.BUCKET_NAME);
+		BasicConfig.setContext(rtConfig);
 		//
-		logger.info(Markers.MSG, RunTimeConfig.getContext().toString());
+		logger.info(Markers.MSG, BasicConfig.getContext().toString());
 		//  read
 		try(
 			final BufferingOutputStream

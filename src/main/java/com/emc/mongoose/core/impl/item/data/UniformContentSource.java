@@ -1,6 +1,6 @@
 package com.emc.mongoose.core.impl.item.data;
 // mongoose-common
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.Markers;
 // mongoose-core-api
 import com.emc.mongoose.core.api.item.data.ContentSource;
@@ -24,8 +24,8 @@ implements ContentSource {
 	public UniformContentSource()
 	throws NumberFormatException {
 		this(
-			Long.parseLong(RunTimeConfig.getContext().getDataRingSeed(), 0x10),
-			(int) RunTimeConfig.getContext().getDataRingSize()
+			Long.parseLong(BasicConfig.getContext().getDataRingSeed(), 0x10),
+			(int) BasicConfig.getContext().getDataRingSize()
 		);
 	}
 	//
@@ -41,13 +41,13 @@ implements ContentSource {
 	@Override
 	public final String toString() {
 		return
-			Long.toHexString(seed) + RunTimeConfig.LIST_SEP +
+			Long.toHexString(seed) + BasicConfig.LIST_SEP +
 			Integer.toHexString(zeroByteLayer.capacity());
 	}
 	//
 	public static UniformContentSource fromString(final String metaInfo)
 		throws IllegalArgumentException, IOException {
-		final String values[] = metaInfo.split(RunTimeConfig.LIST_SEP);
+		final String values[] = metaInfo.split(BasicConfig.LIST_SEP);
 		if(values.length == 2) {
 			return new UniformContentSource(
 				Long.parseLong(values[0], 0x10), Integer.parseInt(values[1], 0x10)

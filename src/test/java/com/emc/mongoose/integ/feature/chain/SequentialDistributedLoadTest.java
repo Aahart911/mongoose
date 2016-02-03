@@ -1,6 +1,6 @@
 package com.emc.mongoose.integ.feature.chain;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 import com.emc.mongoose.common.log.appenders.RunIdFileManager;
 import com.emc.mongoose.integ.base.DistributedLoadBuilderTestBase;
@@ -44,15 +44,15 @@ extends DistributedLoadBuilderTestBase {
 	@BeforeClass
 	public static void setUpClass()
 	throws Exception {
-		System.setProperty(RunTimeConfig.KEY_RUN_ID, RUN_ID);
+		System.setProperty(BasicConfig.KEY_RUN_ID, RUN_ID);
 		DistributedLoadBuilderTestBase.setUpClass();
 		//
-		final RunTimeConfig rtConfig = RunTimeConfig.getContext();
-		rtConfig.set(RunTimeConfig.KEY_API_NAME, "s3");
-		rtConfig.set(RunTimeConfig.KEY_SCENARIO_CHAIN_LOAD, LOAD_SEQ);
-		rtConfig.set(RunTimeConfig.KEY_LOAD_LIMIT_TIME, LOAD_JOB_TIME_LIMIT_SEC + "s");
-		rtConfig.set(RunTimeConfig.KEY_SCENARIO_CHAIN_CONCURRENT, false);
-		RunTimeConfig.setContext(rtConfig);
+		final BasicConfig rtConfig = BasicConfig.getContext();
+		rtConfig.set(BasicConfig.KEY_API_NAME, "s3");
+		rtConfig.set(BasicConfig.KEY_SCENARIO_CHAIN_LOAD, LOAD_SEQ);
+		rtConfig.set(BasicConfig.KEY_LOAD_LIMIT_TIME, LOAD_JOB_TIME_LIMIT_SEC + "s");
+		rtConfig.set(BasicConfig.KEY_SCENARIO_CHAIN_CONCURRENT, false);
+		BasicConfig.setContext(rtConfig);
 		//
 		final Chain chainScenario = new Chain(rtConfig);
 		try(

@@ -1,6 +1,6 @@
 package com.emc.mongoose.storage.mock.impl.web.request;
 
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.core.api.io.conf.WSRequestConfig;
@@ -65,7 +65,7 @@ public class NagainaAtmosRequestHandler<T extends WSObjectMock> extends NagainaR
 			ST_PATH = URI_BASE_PATH + "/subtenant",
 			STS_PATH = ST_PATH + "s/";
 
-	public NagainaAtmosRequestHandler(RunTimeConfig rtConfig, WSMock<T> sharedStorage) {
+	public NagainaAtmosRequestHandler(BasicConfig rtConfig, WSMock<T> sharedStorage) {
 		super(rtConfig, sharedStorage);
 	}
 

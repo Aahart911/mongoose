@@ -3,7 +3,7 @@ package com.emc.mongoose.core.impl.load.executor;
 import com.emc.mongoose.common.conf.Constants;
 // mongoose-common.jar
 import com.emc.mongoose.common.conf.SizeUtil;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 // mongoose-core-api.jar
@@ -37,16 +37,16 @@ extends LimitedRateLoadExecutorBase<T> {
 	private final float sizeBias;
 	//
 	protected MutableDataLoadExecutorBase(
-		final RunTimeConfig runTimeConfig,
+		final BasicConfig appConfig,
 		final IOConfig<? extends DataItem, ? extends Container<? extends DataItem>> ioConfig,
 		final String[] addrs, final int connCountPerNode, final int threadCount,
 		final ItemSrc<T> itemSrc, final long maxCount,
 		final long sizeMin, final long sizeMax, final float sizeBias,
-		final int manualTaskSleepMicroSecs, final float rateLimit, final int countUpdPerReq
+		final float rateLimit, final int countUpdPerReq
 	) throws ClassCastException {
 		super(
-			runTimeConfig, ioConfig, addrs, connCountPerNode, threadCount,
-			itemSrc, maxCount, manualTaskSleepMicroSecs, rateLimit
+			appConfig, ioConfig, addrs, connCountPerNode, threadCount,
+			itemSrc, maxCount, rateLimit
 		);
 		//
 		this.loadType = ioConfig.getLoadType();
@@ -54,7 +54,7 @@ extends LimitedRateLoadExecutorBase<T> {
 		int buffSize;
 		if(itemSrc instanceof DataItemFileSrc) {
 			final long approxDataItemSize = ((DataItemFileSrc) itemSrc).getApproxDataItemsSize(
-				runTimeConfig.getBatchSize()
+				appConfig.getBatchSize()
 			);
 			if(approxDataItemSize < Constants.BUFF_SIZE_LO) {
 				buffSize = Constants.BUFF_SIZE_LO;

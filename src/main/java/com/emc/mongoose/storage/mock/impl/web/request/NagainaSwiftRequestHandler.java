@@ -1,6 +1,6 @@
 package com.emc.mongoose.storage.mock.impl.web.request;
 
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.core.api.io.conf.WSRequestConfig;
@@ -53,7 +53,7 @@ public class NagainaSwiftRequestHandler<T extends WSObjectMock> extends NagainaR
 	private final static ObjectMapper OBJ_MAPPER = new ObjectMapper();
 	private final static String AUTH = "auth", API_BASE_PATH_SWIFT = "v1";
 
-	public NagainaSwiftRequestHandler(RunTimeConfig rtConfig, WSMock<T> sharedStorage) {
+	public NagainaSwiftRequestHandler(BasicConfig rtConfig, WSMock<T> sharedStorage) {
 		super(rtConfig, sharedStorage);
 	}
 

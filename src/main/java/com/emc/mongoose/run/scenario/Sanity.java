@@ -1,6 +1,6 @@
 package com.emc.mongoose.run.scenario;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.conf.SizeUtil;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
@@ -137,19 +137,19 @@ implements Runnable {
 	public static void main(final String... args)
 	throws IOException, InterruptedException {
 		//
-		final RunTimeConfig rtConfig = RunTimeConfig.getContext();
+		final BasicConfig rtConfig = BasicConfig.getContext();
 		//
-		rtConfig.set(RunTimeConfig.KEY_STORAGE_MOCK_CAPACITY, DEFAULT_DATA_COUNT_MAX);
-		rtConfig.set(RunTimeConfig.KEY_STORAGE_MOCK_CONTAINER_CAPACITY, DEFAULT_DATA_COUNT_MAX);
-		rtConfig.set(RunTimeConfig.KEY_STORAGE_MOCK_HEAD_COUNT, DEFAULT_NODE_COUNT);
+		rtConfig.set(BasicConfig.KEY_STORAGE_MOCK_CAPACITY, DEFAULT_DATA_COUNT_MAX);
+		rtConfig.set(BasicConfig.KEY_STORAGE_MOCK_CONTAINER_CAPACITY, DEFAULT_DATA_COUNT_MAX);
+		rtConfig.set(BasicConfig.KEY_STORAGE_MOCK_HEAD_COUNT, DEFAULT_NODE_COUNT);
 		//rtConfig.set(RunTimeConfig.KEY_LOAD_METRICS_PERIOD_SEC, 0);
 		Thread wsMockThread = new Thread(
-			new Cinderella(RunTimeConfig.getContext()), "wsMock"
+			new Cinderella(BasicConfig.getContext()), "wsMock"
 		);
 		wsMockThread.setDaemon(true);
 		wsMockThread.start();
 		//
-		rtConfig.set(RunTimeConfig.KEY_LOAD_METRICS_PERIOD_SEC, 10);
+		rtConfig.set(BasicConfig.KEY_LOAD_METRICS_PERIOD_SEC, 10);
 		final StorageClientBuilder<WSObject, StorageClient<WSObject>>
 			clientBuilder = new BasicStorageClientBuilder<>();
 		final String storageNodes[] = new String[DEFAULT_NODE_COUNT];
@@ -171,12 +171,12 @@ implements Runnable {
 			LOG.info(Markers.MSG, "Standalone sanity finished");
 		}
 		// distributed mode
-		rtConfig.set(RunTimeConfig.KEY_REMOTE_SERVE_JMX, true);
+		rtConfig.set(BasicConfig.KEY_REMOTE_SERVE_JMX, true);
 		ServiceUtil.init();
 		//
 		final LoadBuilderSvc multiSvc = new MultiLoadBuilderSvc(rtConfig);
 		multiSvc.start();
-		rtConfig.set(RunTimeConfig.KEY_REMOTE_PORT_MONITOR, 1299);
+		rtConfig.set(BasicConfig.KEY_REMOTE_PORT_MONITOR, 1299);
 		try(
 			final StorageClient<WSObject> client = clientBuilder
 				.setClientMode(new String[] {ServiceUtil.getHostAddr()})

@@ -1,6 +1,7 @@
 package com.emc.mongoose.core.impl.load.builder;
 // mongoose-common.jar
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.concurrent.ThreadUtil;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.conf.SizeUtil;
 import com.emc.mongoose.common.log.Markers;
 // mongoose-core-impl.jar
@@ -28,10 +29,10 @@ implements WSDataLoadBuilder<T, U> {
 	//
 	private final static Logger LOG = LogManager.getLogger();
 	//
-	public BasicWSDataLoadBuilder(final RunTimeConfig runTimeConfig)
+	public BasicWSDataLoadBuilder(final BasicConfig appConfig)
 	throws RemoteException {
-		super(runTimeConfig);
-		setRunTimeConfig(runTimeConfig);
+		super(appConfig);
+		setRunTimeConfig(appConfig);
 	}
 	//
 	@Override @SuppressWarnings("unchecked")
@@ -40,12 +41,12 @@ implements WSDataLoadBuilder<T, U> {
 	}
 	//
 	@Override
-	public BasicWSDataLoadBuilder<T, U> setRunTimeConfig(final RunTimeConfig rtConfig)
+	public BasicWSDataLoadBuilder<T, U> setRunTimeConfig(final BasicConfig rtConfig)
 	throws RemoteException {
 		//
 		super.setRunTimeConfig(rtConfig);
 		//
-		final String paramName = RunTimeConfig.KEY_STORAGE_SCHEME;
+		final String paramName = BasicConfig.KEY_STORAGE_SCHEME;
 		try {
 			WSRequestConfig.class.cast(ioConfig).setScheme(rtConfig.getStorageProto());
 		} catch(final NoSuchElementException e) {
@@ -78,7 +79,7 @@ implements WSDataLoadBuilder<T, U> {
 		}
 		//
 		final WSRequestConfig wsReqConf = (WSRequestConfig) ioConfig;
-		final RunTimeConfig localRunTimeConfig = RunTimeConfig.getContext();
+		final BasicConfig ctxConfig = BasicConfig.getContext();
 		if(minObjSize > maxObjSize) {
 			throw new IllegalStateException(
 				String.format(
@@ -88,18 +89,14 @@ implements WSDataLoadBuilder<T, U> {
 			);
 		}
 		//
-		final IOTask.Type loadType = ioConfig.getLoadType();
-		final int
-			connPerNode = loadTypeConnPerNode.get(loadType),
-			minThreadCount = getMinIOThreadCount(
-				loadTypeWorkerCount.get(loadType), storageNodeAddrs.length, connPerNode
-			);
+		final int minThreadCount = getMinIoThreadCount(
+			ThreadUtil.getWorkerCount(), storageNodeAddrs.length, threadCount
+		);
 		//
 		return (U) new BasicWSDataLoadExecutor<>(
-			localRunTimeConfig, wsReqConf, storageNodeAddrs, connPerNode, minThreadCount,
+			ctxConfig, wsReqConf, storageNodeAddrs, threadCount, minThreadCount,
 			itemSrc == null ? getDefaultItemSource() : itemSrc,
-			maxCount, minObjSize, maxObjSize, objSizeBias,
-			manualTaskSleepMicroSecs, rateLimit, updatesPerItem
+			limitCount, minObjSize, maxObjSize, objSizeBias, limitRate, updatesPerItem
 		);
 	}
 }

@@ -1,6 +1,6 @@
 package com.emc.mongoose.storage.mock.impl.web.request;
 // mongoose-common.jar
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 // mongoose-storage-adapter-swift.jar
@@ -57,10 +57,10 @@ extends WSRequestHandlerBase<T> {
 	private final String apiBasePathSwift;
 	//
 	public SwiftRequestHandler(
-		final RunTimeConfig runTimeConfig, final WSMock<T> sharedStorage
+		final BasicConfig appConfig, final WSMock<T> sharedStorage
 	) {
-		super(runTimeConfig, sharedStorage);
-		apiBasePathSwift = runTimeConfig.getString(WSRequestConfigImpl.KEY_CONF_SVC_BASEPATH);
+		super(appConfig, sharedStorage);
+		apiBasePathSwift = appConfig.getString(WSRequestConfigImpl.KEY_CONF_SVC_BASEPATH);
 	}
 	//
 	public boolean matches(final HttpRequest httpRequest) {

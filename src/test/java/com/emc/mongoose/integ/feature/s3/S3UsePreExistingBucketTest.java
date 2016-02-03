@@ -1,6 +1,6 @@
 package com.emc.mongoose.integ.feature.s3;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.conf.SizeUtil;
 //
 import com.emc.mongoose.common.log.appenders.RunIdFileManager;
@@ -36,14 +36,14 @@ extends StandaloneClientTestBase {
 	throws Exception {
 		//
 		System.setProperty(
-			RunTimeConfig.KEY_RUN_ID, S3UsePreExistingBucketTest.class.getCanonicalName()
+			BasicConfig.KEY_RUN_ID, S3UsePreExistingBucketTest.class.getCanonicalName()
 		);
 		StandaloneClientTestBase.setUpClass();
 		//
 		final WSRequestConfigImpl reqConf = (WSRequestConfigImpl) WSRequestConfigBase
 			.newInstanceFor("s3")
-			.setRunTimeConfig(RunTimeConfig.getContext());
-		reqConf.setRunTimeConfig(RunTimeConfig.getContext());
+			.setAppConfig(BasicConfig.getContext());
+		reqConf.setAppConfig(BasicConfig.getContext());
 		bucketHelper = new WSBucketHelper(
 			reqConf, new BasicContainer(S3UsePreExistingBucketTest.class.getSimpleName())
 		);
@@ -69,7 +69,7 @@ extends StandaloneClientTestBase {
 	@AfterClass
 	public static void tearDownClass()
 	throws Exception {
-		bucketHelper.delete(RunTimeConfig.getContext().getStorageAddrs()[0]);
+		bucketHelper.delete(BasicConfig.getContext().getStorageAddrs()[0]);
 		StandaloneClientTestBase.tearDownClass();
 	}
 	//

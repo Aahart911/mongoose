@@ -1,6 +1,6 @@
 package com.emc.mongoose.integ.base;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -16,16 +16,16 @@ extends LoggingTestBase {
 	public static void setUpClass()
 	throws Exception {
 		LoggingTestBase.setUpClass();
-		final RunTimeConfig rtConfig = RunTimeConfig.getContext();
-		STORAGE_ADDRS_DEFAULT = rtConfig.getString(RunTimeConfig.KEY_STORAGE_ADDRS);
-		rtConfig.set(RunTimeConfig.KEY_STORAGE_ADDRS, "10.249.237.73,10.249.237.74,10.249.237.75");
+		final BasicConfig rtConfig = BasicConfig.getContext();
+		STORAGE_ADDRS_DEFAULT = rtConfig.getString(BasicConfig.KEY_STORAGE_ADDRS);
+		rtConfig.set(BasicConfig.KEY_STORAGE_ADDRS, "10.249.237.73,10.249.237.74,10.249.237.75");
 	}
 	//
 	@AfterClass
 	public static void tearDownClass()
 	throws Exception {
 		LoggingTestBase.tearDownClass();
-		final RunTimeConfig rtConfig = RunTimeConfig.getContext();
-		rtConfig.set(RunTimeConfig.KEY_STORAGE_ADDRS, STORAGE_ADDRS_DEFAULT); // reset to default
+		final BasicConfig rtConfig = BasicConfig.getContext();
+		rtConfig.set(BasicConfig.KEY_STORAGE_ADDRS, STORAGE_ADDRS_DEFAULT); // reset to default
 	}
 }

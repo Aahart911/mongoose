@@ -1,6 +1,6 @@
 package com.emc.mongoose.storage.mock.impl.web;
 
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
@@ -44,7 +44,7 @@ public class Nagaina<T extends WSObjectMock>
 	private final NagainaRequestHandlerBase atmosRequestHandler;
 	private final int portStart;
 
-	public Nagaina(RunTimeConfig rtConfig) {
+	public Nagaina(BasicConfig rtConfig) {
 		this(
 				rtConfig.getStorageMockHeadCount(),
 				rtConfig.getApiTypePort(rtConfig.getApiName()),
@@ -75,9 +75,9 @@ public class Nagaina<T extends WSObjectMock>
 		workerGroups = new NioEventLoopGroup[headCount];
 		channels = new Channel[headCount];
 		LOG.info(Markers.MSG, "Starting with {} head(s)", headCount);
-		s3RequestHandler = new NagainaS3RequestHandler<>(RunTimeConfig.getContext(), this);
-		swiftRequestHandler = new NagainaSwiftRequestHandler<>(RunTimeConfig.getContext(), this);
-		atmosRequestHandler = new NagainaAtmosRequestHandler<>(RunTimeConfig.getContext(), this);
+		s3RequestHandler = new NagainaS3RequestHandler<>(BasicConfig.getContext(), this);
+		swiftRequestHandler = new NagainaSwiftRequestHandler<>(BasicConfig.getContext(), this);
+		atmosRequestHandler = new NagainaAtmosRequestHandler<>(BasicConfig.getContext(), this);
 	}
 
 	@SuppressWarnings("unchecked")

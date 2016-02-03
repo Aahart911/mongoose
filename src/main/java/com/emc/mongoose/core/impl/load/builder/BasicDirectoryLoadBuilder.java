@@ -1,11 +1,10 @@
 package com.emc.mongoose.core.impl.load.builder;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 import com.emc.mongoose.core.api.item.container.Directory;
 import com.emc.mongoose.core.api.item.data.FileItem;
 import com.emc.mongoose.core.api.io.conf.FileIOConfig;
-import com.emc.mongoose.core.api.io.task.IOTask;
 import com.emc.mongoose.core.api.load.builder.DirectoryLoadBuilder;
 import com.emc.mongoose.core.api.load.executor.DirectoryLoadExecutor;
 //
@@ -27,7 +26,7 @@ public class BasicDirectoryLoadBuilder<
 extends ContainerLoadBuilderBase<T, C, U>
 implements DirectoryLoadBuilder<T, C, U> {
 	//
-	public BasicDirectoryLoadBuilder(final RunTimeConfig rtConfig)
+	public BasicDirectoryLoadBuilder(final BasicConfig rtConfig)
 	throws RemoteException {
 		super(rtConfig);
 	}
@@ -55,12 +54,10 @@ implements DirectoryLoadBuilder<T, C, U> {
 	//
 	@Override @SuppressWarnings("unchecked")
 	protected U buildActually() {
-		final IOTask.Type loadType = ioConfig.getLoadType();
-		final int threadCount = loadTypeConnPerNode.get(loadType);
 		return (U) new BasicDirectoryLoadExecutor<>(
-			RunTimeConfig.getContext(), (FileIOConfig<T, C>) ioConfig, null, 0, threadCount,
+			BasicConfig.getContext(), (FileIOConfig<T, C>) ioConfig, null, 0, threadCount,
 			itemSrc == null ? getDefaultItemSource() : itemSrc,
-			maxCount, manualTaskSleepMicroSecs, rateLimit
+			limitCount, limitRate
 		);
 	}
 }

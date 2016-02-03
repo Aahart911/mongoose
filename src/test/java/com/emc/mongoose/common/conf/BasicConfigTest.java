@@ -8,13 +8,13 @@ import java.util.Map;
 /**
  * Created by gusakk on 15.07.15.
  */
-public class RunTimeConfigTest {
+public class BasicConfigTest {
 
 	@Test
 	public void shouldHaveAliasesForNewConfParamNames()
 	throws Exception {
-		RunTimeConfig.initContext();
-		final Map<String, String[]> mapOverride = RunTimeConfig.MAP_OVERRIDE;
+		BasicConfig.initContext();
+		final Map<String, String[]> mapOverride = BasicConfig.MAP_OVERRIDE;
 
 		Assert.assertArrayEquals(mapOverride.get("api.s3.port"),
 			new String[] { "api.type.s3.port" });

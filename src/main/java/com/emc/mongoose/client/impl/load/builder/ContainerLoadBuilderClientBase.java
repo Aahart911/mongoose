@@ -3,7 +3,7 @@ package com.emc.mongoose.client.impl.load.builder;
 import com.emc.mongoose.client.api.load.builder.ContainerLoadBuilderClient;
 import com.emc.mongoose.client.api.load.executor.ContainerLoadClient;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.core.api.item.container.Container;
 import com.emc.mongoose.core.api.item.data.DataItem;
@@ -35,16 +35,16 @@ implements ContainerLoadBuilderClient<T, C, W, U> {
 	//
 	protected ContainerLoadBuilderClientBase()
 	throws IOException {
-		this(RunTimeConfig.getContext());
+		this(BasicConfig.getContext());
 	}
 	//
-	protected ContainerLoadBuilderClientBase(final RunTimeConfig rtConfig)
+	protected ContainerLoadBuilderClientBase(final BasicConfig rtConfig)
 	throws IOException {
 		super(rtConfig);
 	}
 	//
 	@Override
-	public ContainerLoadBuilderClientBase<T, C, W, U, V> setRunTimeConfig(final RunTimeConfig rtConfig)
+	public ContainerLoadBuilderClientBase<T, C, W, U, V> setRunTimeConfig(final BasicConfig rtConfig)
 	throws RemoteException {
 		super.setRunTimeConfig(rtConfig);
 		//

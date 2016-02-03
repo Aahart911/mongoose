@@ -1,7 +1,7 @@
 package com.emc.mongoose.integ.feature.filesystem;
 
 import com.emc.mongoose.common.conf.Constants;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.common.log.appenders.RunIdFileManager;
 import com.emc.mongoose.integ.base.DistributedLoadBuilderTestBase;
@@ -48,22 +48,22 @@ extends DistributedLoadBuilderTestBase {
 	@BeforeClass
 	public static void setUpClass()
 	throws Exception {
-		System.setProperty(RunTimeConfig.KEY_RUN_ID, RUN_ID);
+		System.setProperty(BasicConfig.KEY_RUN_ID, RUN_ID);
 		DistributedLoadBuilderTestBase.setUpClass();
 		//
-		final RunTimeConfig rtConfig = RunTimeConfig.getContext();
-		rtConfig.set(RunTimeConfig.KEY_ITEM_CLASS, "file");
-		rtConfig.set(RunTimeConfig.KEY_ITEM_PREFIX, "/tmp/" + RUN_ID);
-		rtConfig.set(RunTimeConfig.KEY_LOAD_LIMIT_TIME, LIMIT_TIME);
-		rtConfig.set(RunTimeConfig.KEY_SCENARIO_NAME, TestConstants.SCENARIO_RAMPUP);
-		rtConfig.set(RunTimeConfig.KEY_SCENARIO_RAMPUP_SIZES, RAMPUP_SIZES);
-		rtConfig.set(RunTimeConfig.KEY_SCENARIO_RAMPUP_CONN_COUNTS, RAMPUP_CONN_COUNTS);
-		rtConfig.set(RunTimeConfig.KEY_SCENARIO_CHAIN_LOAD, RAMPUP_LOAD_CHAIN);
-		rtConfig.set(RunTimeConfig.KEY_API_S3_BUCKET, TestConstants.BUCKET_NAME);
-		RunTimeConfig.setContext(rtConfig);
+		final BasicConfig rtConfig = BasicConfig.getContext();
+		rtConfig.set(BasicConfig.KEY_ITEM_CLASS, "file");
+		rtConfig.set(BasicConfig.KEY_ITEM_PREFIX, "/tmp/" + RUN_ID);
+		rtConfig.set(BasicConfig.KEY_LOAD_LIMIT_TIME, LIMIT_TIME);
+		rtConfig.set(BasicConfig.KEY_SCENARIO_NAME, TestConstants.SCENARIO_RAMPUP);
+		rtConfig.set(BasicConfig.KEY_SCENARIO_RAMPUP_SIZES, RAMPUP_SIZES);
+		rtConfig.set(BasicConfig.KEY_SCENARIO_RAMPUP_CONN_COUNTS, RAMPUP_CONN_COUNTS);
+		rtConfig.set(BasicConfig.KEY_SCENARIO_CHAIN_LOAD, RAMPUP_LOAD_CHAIN);
+		rtConfig.set(BasicConfig.KEY_API_S3_BUCKET, TestConstants.BUCKET_NAME);
+		BasicConfig.setContext(rtConfig);
 		//
 		final Logger logger = LogManager.getLogger();
-		logger.info(Markers.MSG, RunTimeConfig.getContext().toString());
+		logger.info(Markers.MSG, BasicConfig.getContext().toString());
 		//
 		try (final BufferingOutputStream
 			     stdOutStream =	StdOutUtil.getStdOutBufferingStream()
@@ -81,8 +81,8 @@ extends DistributedLoadBuilderTestBase {
 	@AfterClass
 	public  static void tearDownClass()
 	throws Exception {
-		System.setProperty(RunTimeConfig.KEY_ITEM_CLASS, "data");
-		System.setProperty(RunTimeConfig.KEY_ITEM_PREFIX, "");
+		System.setProperty(BasicConfig.KEY_ITEM_CLASS, "data");
+		System.setProperty(BasicConfig.KEY_ITEM_PREFIX, "");
 		DistributedLoadBuilderTestBase.tearDownClass();
 		final File tgtDir = Paths.get("/tmp/" + RUN_ID).toFile();
 		for(final File f : tgtDir.listFiles()) {
@@ -119,34 +119,34 @@ extends DistributedLoadBuilderTestBase {
 	@Test
 	public void shouldCustomValuesDisplayedCorrectlyInConfigurationTable()
 	throws Exception {
-		final String[] runtimeConfCustomParam = RunTimeConfig.getContext().toString().split("\n");
+		final String[] runtimeConfCustomParam = BasicConfig.getContext().toString().split("\n");
 		for (final String confParam : runtimeConfCustomParam) {
-			if (confParam.contains(RunTimeConfig.KEY_LOAD_LIMIT_TIME)) {
+			if (confParam.contains(BasicConfig.KEY_LOAD_LIMIT_TIME)) {
 				Assert.assertTrue(
 					"Information about time limit must be correct in configuration table",
 					confParam.contains(LIMIT_TIME)
 				);
 			}
-			if (confParam.contains(RunTimeConfig.KEY_STORAGE_ADDRS)) {
+			if (confParam.contains(BasicConfig.KEY_STORAGE_ADDRS)) {
 				Assert.assertTrue(
 					"Information about storage address must be correct in configuration table",
 					confParam.contains("127.0.0.1")
 				);
 			}
-			if (confParam.contains(RunTimeConfig.KEY_RUN_MODE)) {
+			if (confParam.contains(BasicConfig.KEY_RUN_MODE)) {
 				Assert.assertTrue(
 					"Information about run mode must be correct in configuration table",
 					confParam.contains(Constants.RUN_MODE_STANDALONE)
 				);
 			}
-			if (confParam.contains(RunTimeConfig.KEY_RUN_ID)) {
+			if (confParam.contains(BasicConfig.KEY_RUN_ID)) {
 				if (RUN_ID.length() >= 64) {
 					Assert.assertTrue(confParam.contains(RUN_ID.substring(0, 63).trim()));
 				} else {
 					Assert.assertTrue(confParam.contains(RUN_ID));
 				}
 			}
-			if (confParam.contains(RunTimeConfig.KEY_SCENARIO_NAME)) {
+			if (confParam.contains(BasicConfig.KEY_SCENARIO_NAME)) {
 				Assert.assertTrue(
 					"Information about scenario name must be correct in configuration table",
 					confParam.contains(TestConstants.SCENARIO_RAMPUP)

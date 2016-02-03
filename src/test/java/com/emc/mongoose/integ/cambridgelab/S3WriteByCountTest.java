@@ -1,6 +1,6 @@
 package com.emc.mongoose.integ.cambridgelab;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.conf.SizeUtil;
 //
 import com.emc.mongoose.common.log.LogUtil;
@@ -35,7 +35,7 @@ extends CambridgeLabDistributedClientTestBase {
 	//
 	@BeforeClass
 	public static void setUpClass() {
-		System.setProperty(RunTimeConfig.KEY_RUN_ID, RUN_ID);
+		System.setProperty(BasicConfig.KEY_RUN_ID, RUN_ID);
 		try {
 			CambridgeLabDistributedClientTestBase.setUpClass();
 			try(

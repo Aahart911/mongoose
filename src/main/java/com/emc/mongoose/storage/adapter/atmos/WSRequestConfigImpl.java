@@ -8,7 +8,7 @@ import com.emc.mongoose.core.api.io.task.IOTask;
 // mongoose-core-impl.jar
 import com.emc.mongoose.core.impl.io.conf.WSRequestConfigBase;
 // mongoose-common.jar
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.Markers;
 //
 import org.apache.commons.codec.binary.Base64;
@@ -208,20 +208,20 @@ extends WSRequestConfigBase<T, C> {
 	}
 	//
 	@Override
-	public final WSRequestConfigImpl<T, C> setRunTimeConfig(final RunTimeConfig runTimeConfig) {
-		super.setRunTimeConfig(runTimeConfig);
+	public final WSRequestConfigImpl<T, C> setAppConfig(final BasicConfig appConfig) {
+		super.setAppConfig(appConfig);
 		//
 		try {
 			setSubTenant(
 				new WSSubTenantImpl<>(
-					this, runTimeConfig.getString(RunTimeConfig.KEY_API_ATMOS_SUBTENANT)
+					this, appConfig.getString(BasicConfig.KEY_API_ATMOS_SUBTENANT)
 				)
 			);
 		} catch(final NoSuchElementException e) {
-			LOG.error(Markers.ERR, MSG_TMPL_NOT_SPECIFIED, RunTimeConfig.KEY_API_ATMOS_SUBTENANT);
+			LOG.error(Markers.ERR, MSG_TMPL_NOT_SPECIFIED, BasicConfig.KEY_API_ATMOS_SUBTENANT);
 		}
 		//
-		if(runTimeConfig.getDataFileAccessEnabled()) {
+		if(appConfig.getDataFileAccessEnabled()) {
 			uriBasePath = PREFIX_URI + API_TYPE_FS;
 		} else {
 			uriBasePath = PREFIX_URI + API_TYPE_OBJ;
@@ -413,7 +413,7 @@ extends WSRequestConfigBase<T, C> {
 			subTenant.create(storageAddrs[0]);
 		}
 		/*re*/setSubTenant(subTenant);
-		runTimeConfig.set(RunTimeConfig.KEY_API_ATMOS_SUBTENANT, subTenant.getValue());
+		appConfig.set(BasicConfig.KEY_API_ATMOS_SUBTENANT, subTenant.getValue());
 		super.configureStorage(storageAddrs);
 	}
 	//

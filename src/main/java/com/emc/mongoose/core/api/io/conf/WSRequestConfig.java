@@ -5,7 +5,7 @@ import com.emc.mongoose.core.api.item.data.WSObject;
 import com.emc.mongoose.core.api.item.data.ContentSource;
 import com.emc.mongoose.core.api.io.task.IOTask;
 // mongoose-common.jar
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpHost;
@@ -103,7 +103,7 @@ extends RequestConfig<T, C> {
 	boolean getPipelining();
 	//
 	@Override
-	WSRequestConfig<T, C> setRunTimeConfig(final RunTimeConfig props);
+	WSRequestConfig<T, C> setAppConfig(final BasicConfig props);
 	//
 	HeaderGroup getSharedHeaders();
 	//

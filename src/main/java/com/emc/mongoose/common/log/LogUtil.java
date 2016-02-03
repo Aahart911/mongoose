@@ -1,7 +1,7 @@
 package com.emc.mongoose.common.log;
 // mongoose-common.jar
 import com.emc.mongoose.common.conf.Constants;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -107,7 +107,7 @@ implements ShutdownCallbackRegistry {
 		CYAN = "\u001B[36m",
 		WHITE = "\u001B[37m",
 		//
-		PATH_LOG_DIR = String.format("%s%slog", RunTimeConfig.DIR_ROOT, File.separator);
+		PATH_LOG_DIR = String.format("%s%slog", BasicConfig.DIR_ROOT, File.separator);
 	//
 	private static LoggerContext LOG_CTX = null;
 	private static volatile boolean STDOUT_COLORING_ENABLED = false;
@@ -155,13 +155,13 @@ implements ShutdownCallbackRegistry {
 				//
 				System.setProperty(KEY_SHUTDOWN_CALLBACK_REGISTRY, VALUE_SHUTDOWN_CALLBACK_REGISTRY);
 				// set "run.id" property with timestamp value if not set before
-				String runId = System.getProperty(RunTimeConfig.KEY_RUN_ID);
+				String runId = System.getProperty(BasicConfig.KEY_RUN_ID);
 				if(runId == null || runId.length() == 0) {
-					System.setProperty(RunTimeConfig.KEY_RUN_ID, newRunId());
+					System.setProperty(BasicConfig.KEY_RUN_ID, newRunId());
 				}
 				// determine the logger configuration file path
 				Path logConfPath = Paths.get(
-					RunTimeConfig.DIR_ROOT, Constants.DIR_CONF, FNAME_LOG_CONF
+					BasicConfig.DIR_ROOT, Constants.DIR_CONF, FNAME_LOG_CONF
 				);
 				//
 				try {

@@ -1,7 +1,7 @@
 package com.emc.mongoose.util.client.impl;
 //
 import com.emc.mongoose.common.conf.Constants;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 //
 import com.emc.mongoose.core.api.item.base.Item;
@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 public final class BasicStorageClientBuilder<T extends Item, U extends StorageClient<T>>
 implements StorageClientBuilder<T, U> {
 	//
-	private final RunTimeConfig rtConfig = RunTimeConfig.getContext();
+	private final BasicConfig rtConfig = BasicConfig.getContext();
 	//
 	@Override
 	public final StorageClientBuilder<T, U> setAPI(final String api)
@@ -32,7 +32,7 @@ implements StorageClientBuilder<T, U> {
 				Arrays.toString(Package.getPackages())
 			);
 		}*/
-		rtConfig.set(RunTimeConfig.KEY_API_NAME, api);
+		rtConfig.set(BasicConfig.KEY_API_NAME, api);
 		return this;
 	}
 	//
@@ -45,66 +45,66 @@ implements StorageClientBuilder<T, U> {
 		final StringBuilder addrListBuilder = new StringBuilder();
 		for(final String nextAddr : nodeAddrs) {
 			if(addrListBuilder.length() > 0) {
-				addrListBuilder.append(RunTimeConfig.LIST_SEP);
+				addrListBuilder.append(BasicConfig.LIST_SEP);
 			}
 			addrListBuilder.append(nextAddr);
 		}
-		rtConfig.set(RunTimeConfig.KEY_STORAGE_ADDRS, addrListBuilder.toString());
+		rtConfig.set(BasicConfig.KEY_STORAGE_ADDRS, addrListBuilder.toString());
 		return this;
 	}
 	//
 	@Override
 	public final StorageClientBuilder<T, U> setClientMode(final String loadServers[]) {
 		if(loadServers == null || loadServers.length < 1) {
-			rtConfig.set(RunTimeConfig.KEY_RUN_MODE, Constants.RUN_MODE_STANDALONE);
+			rtConfig.set(BasicConfig.KEY_RUN_MODE, Constants.RUN_MODE_STANDALONE);
 		} else {
 			final StringBuilder addrListBuilder = new StringBuilder();
 			for(final String nextAddr : loadServers) {
 				if(addrListBuilder.length() > 0) {
-					addrListBuilder.append(RunTimeConfig.LIST_SEP);
+					addrListBuilder.append(BasicConfig.LIST_SEP);
 				}
 				addrListBuilder.append(nextAddr);
 			}
-			rtConfig.set(RunTimeConfig.KEY_LOAD_SERVER_ADDRS, addrListBuilder.toString());
-			rtConfig.set(RunTimeConfig.KEY_RUN_MODE, Constants.RUN_MODE_CLIENT);
+			rtConfig.set(BasicConfig.KEY_LOAD_SERVER_ADDRS, addrListBuilder.toString());
+			rtConfig.set(BasicConfig.KEY_RUN_MODE, Constants.RUN_MODE_CLIENT);
 		}
 		return this;
 	}
 	//
 	@Override
 	public final StorageClientBuilder<T, U> setAuth(final String id, final String secret) {
-		rtConfig.set(RunTimeConfig.KEY_AUTH_ID, id);
-		rtConfig.set(RunTimeConfig.KEY_AUTH_SECRET, secret);
+		rtConfig.set(BasicConfig.KEY_AUTH_ID, id);
+		rtConfig.set(BasicConfig.KEY_AUTH_SECRET, secret);
 		return this;
 	}
 	//
 	@Override
 	public final StorageClientBuilder<T, U> setNamespace(final String value) {
-		rtConfig.set(RunTimeConfig.KEY_STORAGE_NAMESPACE, value);
+		rtConfig.set(BasicConfig.KEY_STORAGE_NAMESPACE, value);
 		return this;
 	}
 	//
 	@Override
 	public final StorageClientBuilder<T, U> setS3Bucket(final String value) {
-		rtConfig.set(RunTimeConfig.KEY_API_S3_BUCKET, value);
+		rtConfig.set(BasicConfig.KEY_API_S3_BUCKET, value);
 		return this;
 	}
 	//
 	@Override
 	public final StorageClientBuilder<T, U> setSwiftContainer(final String value) {
-		rtConfig.set(RunTimeConfig.KEY_API_SWIFT_CONTAINER, value);
+		rtConfig.set(BasicConfig.KEY_API_SWIFT_CONTAINER, value);
 		return this;
 	}
 	//
 	@Override
 	public final StorageClientBuilder<T, U> setAtmosSubtenant(final String value) {
-		rtConfig.set(RunTimeConfig.KEY_API_ATMOS_SUBTENANT, value);
+		rtConfig.set(BasicConfig.KEY_API_ATMOS_SUBTENANT, value);
 		return this;
 	}
 	//
 	@Override
 	public final StorageClientBuilder<T, U> setSwiftAuthToken(final String value) {
-		rtConfig.set(RunTimeConfig.KEY_API_SWIFT_AUTH_TOKEN, value);
+		rtConfig.set(BasicConfig.KEY_API_SWIFT_AUTH_TOKEN, value);
 		return this;
 	}
 	//
@@ -114,7 +114,7 @@ implements StorageClientBuilder<T, U> {
 		if(count < 0) {
 			throw new IllegalArgumentException("Count limit shouldn' be negative");
 		}
-		rtConfig.set(RunTimeConfig.KEY_LOAD_LIMIT_COUNT, count);
+		rtConfig.set(BasicConfig.KEY_LOAD_LIMIT_COUNT, count);
 		return this;
 	}
 	//
@@ -134,7 +134,7 @@ implements StorageClientBuilder<T, U> {
 			}
 		}
 		rtConfig.set(
-			RunTimeConfig.KEY_LOAD_LIMIT_TIME,
+			BasicConfig.KEY_LOAD_LIMIT_TIME,
 			Long.toString(timeOut) + tu.name().toLowerCase().charAt(0)
 		);
 		return this;
@@ -146,28 +146,28 @@ implements StorageClientBuilder<T, U> {
 		if(rate < 0) {
 			throw new IllegalArgumentException("Rate limit should be >= 0");
 		}
-		rtConfig.set(RunTimeConfig.KEY_LOAD_LIMIT_RATE, rate);
+		rtConfig.set(BasicConfig.KEY_LOAD_LIMIT_RATE, rate);
 		return this;
 	}
 	//
 	@Override
 	public final StorageClientBuilder<T, U> setItemClass(final String itemCls)
 	throws IllegalArgumentException {
-		rtConfig.set(RunTimeConfig.KEY_ITEM_CLASS, itemCls);
+		rtConfig.set(BasicConfig.KEY_ITEM_CLASS, itemCls);
 		return this;
 	}
 	//
 	@Override
 	public final StorageClientBuilder<T, U> setVersioning(final boolean enabledFlag)
 	throws IllegalArgumentException {
-		rtConfig.set(RunTimeConfig.KEY_DATA_VERSIONING, enabledFlag);
+		rtConfig.set(BasicConfig.KEY_DATA_VERSIONING, enabledFlag);
 		return this;
 	}
 	//
 	@Override
 	public final StorageClientBuilder<T, U> setFileAccess(final boolean enabledFlag)
 	throws IllegalArgumentException {
-		rtConfig.set(RunTimeConfig.KEY_DATA_FS_ACCESS, enabledFlag);
+		rtConfig.set(BasicConfig.KEY_DATA_FS_ACCESS, enabledFlag);
 		return this;
 	}
 	//
@@ -180,7 +180,7 @@ implements StorageClientBuilder<T, U> {
 		) {
 			throw new IllegalArgumentException("Path shouldn't begin or end with \"/\"");
 		}
-		rtConfig.set(RunTimeConfig.KEY_ITEM_PREFIX, path);
+		rtConfig.set(BasicConfig.KEY_ITEM_PREFIX, path);
 		return this;
 	}
 	//
@@ -189,13 +189,13 @@ implements StorageClientBuilder<T, U> {
 		if(milliSec < 0) {
 			throw new IllegalArgumentException("Request manual delay should be >= 0");
 		}
-		rtConfig.set(RunTimeConfig.KEY_LOAD_LIMIT_REQSLEEP_MILLISEC, milliSec);
+		rtConfig.set(BasicConfig.KEY_LOAD_LIMIT_REQSLEEP_MILLISEC, milliSec);
 		return this;
 	}
 	//
 	@Override @SuppressWarnings("unchecked")
 	public final U build() {
-		final RunTimeConfig rtConfig = RunTimeConfig.getContext();
+		final BasicConfig rtConfig = BasicConfig.getContext();
 		return (U) new BasicStorageClient<>(
 			rtConfig, LoadBuilderFactory.<T, LoadExecutor<T>>getInstance(rtConfig)
 		);

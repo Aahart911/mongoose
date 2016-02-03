@@ -1,6 +1,6 @@
 package com.emc.mongoose.core.impl.load.builder;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.core.api.item.base.ItemNamingScheme;
 import com.emc.mongoose.core.api.item.container.Container;
@@ -36,13 +36,13 @@ implements ContainerLoadBuilder<T, C, U>{
 	//
 	protected boolean flagUseContainerItemSrc;
 	//
-	public ContainerLoadBuilderBase(final RunTimeConfig rtConfig)
+	public ContainerLoadBuilderBase(final BasicConfig rtConfig)
 	throws RemoteException {
 		super(rtConfig);
 	}
 	//
 	@Override
-	public ContainerLoadBuilderBase<T, C, U> setRunTimeConfig(final RunTimeConfig rtConfig)
+	public ContainerLoadBuilderBase<T, C, U> setRunTimeConfig(final BasicConfig rtConfig)
 	throws RemoteException {
 		super.setRunTimeConfig(rtConfig);
 		//

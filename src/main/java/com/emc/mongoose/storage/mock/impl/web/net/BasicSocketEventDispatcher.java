@@ -5,7 +5,7 @@ import com.emc.mongoose.common.concurrent.GroupThreadFactory;
 import static com.emc.mongoose.common.conf.Constants.BUFF_SIZE_LO;
 
 import com.emc.mongoose.common.concurrent.ThreadUtil;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.io.IOWorker;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
@@ -47,7 +47,7 @@ implements Runnable {
 	private final Thread executor;
 	//
 	public BasicSocketEventDispatcher(
-		final RunTimeConfig runTimeConfig,
+		final BasicConfig appConfig,
 		final HttpAsyncService protocolHandler, final int port,
 		final NHttpConnectionFactory<DefaultNHttpServerConnection> connFactory,
 		final StorageIOStats ioStats
@@ -55,10 +55,10 @@ implements Runnable {
 		super(protocolHandler, connFactory);
 		socketAddress = new InetSocketAddress(port);
 		// set I/O reactor configuration
-		final long timeOutMs = runTimeConfig.getLoadLimitTimeUnit().toMillis(
-			runTimeConfig.getLoadLimitTimeValue()
+		final long timeOutMs = appConfig.getLoadLimitTimeUnit().toMillis(
+			appConfig.getLoadLimitTimeValue()
 		);
-		int ioThreadCount = runTimeConfig.getStorageMockWorkersPerSocket();
+		int ioThreadCount = appConfig.getStorageMockWorkersPerSocket();
 		if(ioThreadCount == 0) {
 			ioThreadCount = ThreadUtil.getWorkerCount();
 		}
@@ -68,15 +68,15 @@ implements Runnable {
 		);
 		ioReactorConf = IOReactorConfig.custom()
 			.setIoThreadCount(ioThreadCount)
-			.setBacklogSize((int) runTimeConfig.getSocketBindBackLogSize())
-			.setInterestOpQueued(runTimeConfig.getSocketInterestOpQueued())
-			.setSelectInterval(runTimeConfig.getSocketSelectInterval())
-			.setShutdownGracePeriod(runTimeConfig.getSocketTimeOut())
-			.setSoKeepAlive(runTimeConfig.getSocketKeepAliveFlag())
-			.setSoLinger(runTimeConfig.getSocketLinger())
-			.setSoReuseAddress(runTimeConfig.getSocketReuseAddrFlag())
-			.setSoTimeout(runTimeConfig.getSocketTimeOut())
-			.setTcpNoDelay(runTimeConfig.getSocketTCPNoDelayFlag())
+			.setBacklogSize((int) appConfig.getSocketBindBackLogSize())
+			.setInterestOpQueued(appConfig.getSocketInterestOpQueued())
+			.setSelectInterval(appConfig.getSocketSelectInterval())
+			.setShutdownGracePeriod(appConfig.getSocketTimeOut())
+			.setSoKeepAlive(appConfig.getSocketKeepAliveFlag())
+			.setSoLinger(appConfig.getSocketLinger())
+			.setSoReuseAddress(appConfig.getSocketReuseAddrFlag())
+			.setSoTimeout(appConfig.getSocketTimeOut())
+			.setTcpNoDelay(appConfig.getSocketTCPNoDelayFlag())
 			.setRcvBufSize(BUFF_SIZE_LO)
 			.setSndBufSize(BUFF_SIZE_LO)
 			.setConnectTimeout(

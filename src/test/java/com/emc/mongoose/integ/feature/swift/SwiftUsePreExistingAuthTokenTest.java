@@ -1,5 +1,5 @@
 package com.emc.mongoose.integ.feature.swift;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.conf.SizeUtil;
 import com.emc.mongoose.common.log.appenders.RunIdFileManager;
 import com.emc.mongoose.core.api.item.data.WSObject;
@@ -30,13 +30,13 @@ extends StandaloneClientTestBase {
 	throws Exception {
 		//
 		System.setProperty(
-			RunTimeConfig.KEY_RUN_ID, SwiftUsePreExistingAuthTokenTest.class.getCanonicalName()
+			BasicConfig.KEY_RUN_ID, SwiftUsePreExistingAuthTokenTest.class.getCanonicalName()
 		);
 		StandaloneClientTestBase.setUpClass();
 		//
 		final WSRequestConfigImpl
 			reqConf = (WSRequestConfigImpl) WSRequestConfigBase.newInstanceFor("swift");
-		reqConf.setRunTimeConfig(RunTimeConfig.getContext());
+		reqConf.setAppConfig(BasicConfig.getContext());
 		AUTH_TOKEN = new WSAuthTokenImpl(
 			reqConf, SwiftUsePreExistingContainerTest.class.getSimpleName()
 		);

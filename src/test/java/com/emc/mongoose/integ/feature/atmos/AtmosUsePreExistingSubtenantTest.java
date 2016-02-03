@@ -1,5 +1,5 @@
 package com.emc.mongoose.integ.feature.atmos;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.conf.SizeUtil;
 import com.emc.mongoose.common.log.appenders.RunIdFileManager;
 import com.emc.mongoose.core.api.item.data.WSObject;
@@ -32,15 +32,15 @@ extends StandaloneClientTestBase {
 	throws Exception {
 		//
 		System.setProperty(
-			RunTimeConfig.KEY_RUN_ID, AtmosUsePreExistingSubtenantTest.class.getCanonicalName()
+			BasicConfig.KEY_RUN_ID, AtmosUsePreExistingSubtenantTest.class.getCanonicalName()
 		);
 		StandaloneClientTestBase.setUpClass();
 		//
-		final RunTimeConfig rtConfig = RunTimeConfig.getContext();
+		final BasicConfig rtConfig = BasicConfig.getContext();
 		final WSRequestConfigImpl reqConf = (WSRequestConfigImpl) WSRequestConfigBase
 			.newInstanceFor("atmos")
-			.setRunTimeConfig(rtConfig);
-		reqConf.setRunTimeConfig(RunTimeConfig.getContext());
+			.setAppConfig(rtConfig);
+		reqConf.setAppConfig(BasicConfig.getContext());
 		SUBTENANT = new WSSubTenantImpl(
 			reqConf, AtmosRequestHandler.generateSubtenant()
 		);
@@ -66,7 +66,7 @@ extends StandaloneClientTestBase {
 	@AfterClass
 	public static void tearDownClass()
 	throws Exception {
-		SUBTENANT.delete(RunTimeConfig.getContext().getStorageAddrs()[0]);
+		SUBTENANT.delete(BasicConfig.getContext().getStorageAddrs()[0]);
 		StandaloneClientTestBase.tearDownClass();
 	}
 	//

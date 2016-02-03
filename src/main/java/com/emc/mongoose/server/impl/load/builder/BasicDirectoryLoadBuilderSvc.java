@@ -1,7 +1,7 @@
 package com.emc.mongoose.server.impl.load.builder;
 //
 import com.emc.mongoose.common.conf.Constants;
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.exceptions.DuplicateSvcNameException;
 import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
@@ -47,7 +47,7 @@ implements DirectoryLoadBuilderSvc<T, C, U> {
 	//
 	private String name = getClass().getName();
 	//
-	public BasicDirectoryLoadBuilderSvc(final RunTimeConfig rtConfig)
+	public BasicDirectoryLoadBuilderSvc(final BasicConfig rtConfig)
 	throws RemoteException {
 		super(rtConfig);
 	}
@@ -84,17 +84,13 @@ implements DirectoryLoadBuilderSvc<T, C, U> {
 			throw new IllegalStateException("Should specify request builder instance before instancing");
 		}
 		//
-		final RunTimeConfig rtConfig = RunTimeConfig.getContext();
+		final BasicConfig rtConfig = BasicConfig.getContext();
 		// the statement below fixes hi-level API distributed mode usage and tests
-		rtConfig.setProperty(RunTimeConfig.KEY_RUN_MODE, Constants.RUN_MODE_SERVER);
-		//
-		final IOTask.Type loadType = ioConfig.getLoadType();
-		final int connPerNode = loadTypeConnPerNode.get(loadType);
+		rtConfig.setProperty(BasicConfig.KEY_RUN_MODE, Constants.RUN_MODE_SERVER);
 		//
 		return (U) new BasicDirectoryLoadSvc<>(
-			rtConfig, (FileIOConfig<T, C>) ioConfig, storageNodeAddrs, connPerNode, connPerNode,
-			itemSrc == null ? getDefaultItemSource() : itemSrc,
-			maxCount, manualTaskSleepMicroSecs, rateLimit
+			rtConfig, (FileIOConfig<T, C>) ioConfig, storageNodeAddrs, threadCount, threadCount,
+			itemSrc == null ? getDefaultItemSource() : itemSrc, limitCount, limitRate
 		);
 	}
 	//

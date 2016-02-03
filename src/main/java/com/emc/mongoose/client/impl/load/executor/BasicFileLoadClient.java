@@ -2,7 +2,7 @@ package com.emc.mongoose.client.impl.load.executor;
 //
 import com.emc.mongoose.client.api.load.executor.FileLoadClient;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 //
 import com.emc.mongoose.core.api.item.container.Directory;
 import com.emc.mongoose.core.api.item.data.FileItem;
@@ -24,7 +24,7 @@ extends LoadClientBase<T, W>
 implements FileLoadClient<T, W> {
 	//
 	public BasicFileLoadClient(
-		final RunTimeConfig rtConfig, final FileIOConfig<T, ? extends Directory<T>> ioConfig,
+		final BasicConfig rtConfig, final FileIOConfig<T, ? extends Directory<T>> ioConfig,
 		final String[] addrs, final int connCountPerNode, final int threadCount,
 		final ItemSrc<T> itemSrc, final long maxCount, final Map<String, W> remoteLoadMap
 	) throws RemoteException {

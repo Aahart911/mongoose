@@ -1,6 +1,6 @@
 package com.emc.mongoose.integ.feature.s3;
 
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.appenders.RunIdFileManager;
 import com.emc.mongoose.core.api.item.data.WSObject;
 import com.emc.mongoose.core.impl.item.base.ListItemDst;
@@ -30,7 +30,7 @@ extends StandaloneClientTestBase {
 	throws Exception {
 		//
 		System.setProperty(
-			RunTimeConfig.KEY_RUN_ID, S3ReadZeroSizedItemsFromBucket.class.getCanonicalName()
+			BasicConfig.KEY_RUN_ID, S3ReadZeroSizedItemsFromBucket.class.getCanonicalName()
 		);
 		StandaloneClientTestBase.setUpClass();
 		//

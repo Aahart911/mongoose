@@ -1,6 +1,6 @@
 package com.emc.mongoose.integ.feature.s3;
 //
-import com.emc.mongoose.common.conf.RunTimeConfig;
+import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.conf.SizeUtil;
 import com.emc.mongoose.common.log.appenders.RunIdFileManager;
 //
@@ -30,7 +30,7 @@ extends DistributedClientTestBase {
 	public static void setUpClass()
 	throws Exception {
 		//
-		System.setProperty(RunTimeConfig.KEY_RUN_ID, RUN_ID);
+		System.setProperty(BasicConfig.KEY_RUN_ID, RUN_ID);
 		DistributedClientTestBase.setUpClass();
 		//
 		try(
