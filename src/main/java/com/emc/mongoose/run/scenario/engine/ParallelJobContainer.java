@@ -39,6 +39,11 @@ implements JobContainer {
 	}
 	//
 	@Override
+	public String toString() {
+		return "parallelJobContainer#" + hashCode();
+	}
+	//
+	@Override
 	public final synchronized boolean append(final JobContainer subJob) {
 		return subJobs.add(subJob);
 	}

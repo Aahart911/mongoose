@@ -1,8 +1,52 @@
 {
-	"scenario" : {
-		"parallel" : {
-			"job" : {
+	"jobs" : [
+		{
+			"type" : "load",
+			"config" : {
 			}
+		},
+		{
+			"type" : "parallel",
+			"jobs" : [
+				{
+					"type" : "load"
+				},
+				{
+					"type" : "load",
+					"config" : {
+					}
+				},
+				{
+					"type" : "load",
+					"config" : {
+					}
+				}
+			]
+		},
+		{
+			"type" : "sequential",
+			"jobs" : [
+				{
+					"type" : "parallel",
+					"jobs" : [
+						{
+							"type" : "load",
+							"config" : {
+							}
+						},
+						{
+							"type" : "load",
+							"config" : {
+							}
+						}
+					]
+				},
+				{
+					"type" : "load",
+					"config" : {
+					}
+				}
+			]
 		}
-	}
+	]
 }

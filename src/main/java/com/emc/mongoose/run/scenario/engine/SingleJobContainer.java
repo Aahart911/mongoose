@@ -45,11 +45,23 @@ implements JobContainer {
 	}
 	//
 	@Override
+	public final String toString() {
+		try {
+			return loadJob.getName();
+		} catch(final RemoteException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	//
+	@Override
 	public final void run() {
 		try {
 			loadJob.start();
 			try {
-				loadJob.await(limitTime, limitTimeUnit);
+				loadJob.await(
+					limitTime > 0 ? limitTime : Long.MAX_VALUE,
+					limitTime > 0 ? limitTimeUnit : TimeUnit.DAYS
+				);
 				try {
 					loadJob.close();
 				} catch(final IOException e) {

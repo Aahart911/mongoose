@@ -15,6 +15,11 @@ implements JobContainer {
 	}
 	//
 	@Override
+	public String toString() {
+		return "sequentialJobContainer#" + hashCode();
+	}
+	//
+	@Override
 	public final synchronized void run() {
 		for(final JobContainer subJob : subJobs) {
 			subJob.run();
