@@ -61,7 +61,7 @@ extends DataLoadBuilderBase<T, U> {
 		return (U) new BasicFileLoadExecutor<>(
 			BasicConfig.getContext(), (FileIOConfig<T, ? extends Directory<T>>) ioConfig,
 			null, 0, threadCount, itemSrc == null ? getDefaultItemSource() : itemSrc,
-			limitCount, minObjSize, maxObjSize, objSizeBias, limitRate, updatesPerItem
+			limitCount, limitRate
 		);
 	}
 }

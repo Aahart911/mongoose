@@ -165,8 +165,7 @@ implements LoadExecutor<T> {
 	protected LoadExecutorBase(
 		final BasicConfig rtConfig,
 		final IOConfig<? extends DataItem, ? extends Container<? extends DataItem>> ioConfig,
-		final String addrs[], final int connCountPerNode, final int threadCount,
-		final ItemSrc<T> itemSrc, final long maxCount,
+		final String addrs[], final int threadCount, final ItemSrc<T> itemSrc, final long maxCount,
 		final int instanceNum, final String name
 	) {
 		super(
@@ -195,7 +194,7 @@ implements LoadExecutor<T> {
 			LOG.info(Markers.MSG, "{}: will use \"{}\" as an item source", getName(), itemSrc.toString());
 		}
 		//
-		totalConnCount = connCountPerNode * storageNodeCount;
+		totalConnCount = threadCount * storageNodeCount;
 		activeTaskCountLimit = 2 * totalConnCount + 1000;
 		//
 		IOConfig<? extends DataItem, ? extends Container<? extends DataItem>> reqConfigClone = null;
@@ -234,15 +233,14 @@ implements LoadExecutor<T> {
 	private LoadExecutorBase(
 		final BasicConfig rtConfig,
 		final IOConfig<? extends DataItem, ? extends Container<? extends DataItem>> ioConfig,
-		final String addrs[], final int connCountPerNode, final int threadCount,
+		final String addrs[], final int threadCount,
 		final ItemSrc<T> itemSrc, final long maxCount, final int instanceNum
 	) {
 		this(
-			rtConfig, ioConfig, addrs, connCountPerNode, threadCount, itemSrc, maxCount,
-			instanceNum,
+			rtConfig, ioConfig, addrs, threadCount, itemSrc, maxCount, instanceNum,
 			Integer.toString(instanceNum) + '-' + ioConfig.toString() +
 				(maxCount > 0 ? Long.toString(maxCount) : "") + '-' +
-				Integer.toString(connCountPerNode > 0 ? connCountPerNode : threadCount) +
+				Integer.toString(threadCount) +
 				(addrs == null ? "" : 'x' + Integer.toString(addrs.length))
 		);
 	}
@@ -250,11 +248,10 @@ implements LoadExecutor<T> {
 	protected LoadExecutorBase(
 		final BasicConfig rtConfig,
 		final IOConfig<? extends DataItem, ? extends Container<? extends DataItem>> ioConfig,
-		final String addrs[], final int connCountPerNode, final int threadCount,
-		final ItemSrc<T> itemSrc, final long maxCount
+		final String addrs[], final int threadCount, final ItemSrc<T> itemSrc, final long maxCount
 	) {
 		this(
-			rtConfig, ioConfig, addrs, connCountPerNode, threadCount, itemSrc, maxCount,
+			rtConfig, ioConfig, addrs, threadCount, itemSrc, maxCount,
 			NEXT_INSTANCE_NUM.getAndIncrement()
 		);
 	}

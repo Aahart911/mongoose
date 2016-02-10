@@ -25,14 +25,10 @@ public class BasicWSContainerLoadClient<
 	//
 	public BasicWSContainerLoadClient(
 		final BasicConfig rtConfig, final WSRequestConfig reqConfig, final String addrs[],
-		final int connCountPerNode, final int threadCount,
-		final ItemSrc<C> itemSrc, final long maxCount,
+		final int threadCount, final ItemSrc<C> itemSrc, final long maxCount,
 		final Map<String, W> remoteLoadMap
 	) throws RemoteException {
-		super(
-			rtConfig, reqConfig, addrs, connCountPerNode, threadCount, itemSrc, maxCount,
-			remoteLoadMap
-		);
+		super(rtConfig, reqConfig, addrs, threadCount, itemSrc, maxCount, remoteLoadMap);
 	}
 	//
 	@Override

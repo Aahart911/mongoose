@@ -62,7 +62,7 @@ implements FileIOTask<T> {
 		}
 		//
 		switch(ioType) {
-			case CREATE:
+			case WRITE:
 				openOptions.add(StandardOpenOption.CREATE);
 				openOptions.add(StandardOpenOption.WRITE);
 				openOptions.add(StandardOpenOption.TRUNCATE_EXISTING);
@@ -70,12 +70,12 @@ implements FileIOTask<T> {
 			case READ:
 				openOptions.add(StandardOpenOption.READ);
 				break;
-			case UPDATE:
+			/*case UPDATE:
 				openOptions.add(StandardOpenOption.WRITE);
 				break;
 			case APPEND:
 				openOptions.add(StandardOpenOption.APPEND);
-				break;
+				break;*/
 		}
 		//
 		future = new FutureTask<>(this, this);

@@ -4,9 +4,5 @@ package com.emc.mongoose.core.api.item.base;
  */
 public interface ItemNamingScheme {
 	//
-	enum Type {
-		RANDOM, ASC, DESC
-	}
-	//
 	long getNext();
 }

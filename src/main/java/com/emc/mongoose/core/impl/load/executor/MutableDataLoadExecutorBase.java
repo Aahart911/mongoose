@@ -15,6 +15,7 @@ import com.emc.mongoose.core.api.item.data.DataItemFileSrc;
 import com.emc.mongoose.core.api.io.conf.IOConfig;
 import com.emc.mongoose.core.api.io.task.IOTask;
 //
+import com.emc.mongoose.core.impl.item.data.NewDataItemSrc;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,22 +33,15 @@ extends LimitedRateLoadExecutorBase<T> {
 	private final static Logger LOG = LogManager.getLogger();
 	//
 	protected final IOTask.Type loadType;
-	private final int countUpdPerReq;
-	private final long sizeMin, sizeRange;
-	private final float sizeBias;
+	//private final int countUpdPerReq;
 	//
 	protected MutableDataLoadExecutorBase(
 		final BasicConfig appConfig,
 		final IOConfig<? extends DataItem, ? extends Container<? extends DataItem>> ioConfig,
-		final String[] addrs, final int connCountPerNode, final int threadCount,
-		final ItemSrc<T> itemSrc, final long maxCount,
-		final long sizeMin, final long sizeMax, final float sizeBias,
-		final float rateLimit, final int countUpdPerReq
+		final String[] addrs, final int threadCount, final ItemSrc<T> itemSrc, final long maxCount,
+		final float rateLimit
 	) throws ClassCastException {
-		super(
-			appConfig, ioConfig, addrs, connCountPerNode, threadCount,
-			itemSrc, maxCount, rateLimit
-		);
+		super(appConfig, ioConfig, addrs, threadCount, itemSrc, maxCount, rateLimit);
 		//
 		this.loadType = ioConfig.getLoadType();
 		//
@@ -63,18 +57,10 @@ extends LimitedRateLoadExecutorBase<T> {
 			} else {
 				buffSize = (int) approxDataItemSize;
 			}
-		} else {
-			if(sizeMin == sizeMax) {
-				LOG.debug(Markers.MSG, "Fixed data item size: {}", SizeUtil.formatSize(sizeMin));
-				buffSize = sizeMin < Constants.BUFF_SIZE_HI ? (int) sizeMin : Constants.BUFF_SIZE_HI;
-			} else {
-				final long t = (sizeMin + sizeMax) / 2;
-				buffSize = t < Constants.BUFF_SIZE_HI ? (int) t : Constants.BUFF_SIZE_HI;
-				LOG.debug(
-					Markers.MSG, "Average data item size: {}",
-					SizeUtil.formatSize(buffSize)
-				);
-			}
+		} else if(itemSrc instanceof NewDataItemSrc){
+			final long t = ((NewDataItemSrc) itemSrc).getApproxDataItemsSize();
+			buffSize = t < Constants.BUFF_SIZE_HI ? (int) t : Constants.BUFF_SIZE_HI;
+			LOG.debug(Markers.MSG, "Average data item size: {}", SizeUtil.formatSize(buffSize));
 			if(buffSize < Constants.BUFF_SIZE_LO) {
 				LOG.debug(
 					Markers.MSG, "Buffer size {} is less than lower bound {}",
@@ -82,6 +68,8 @@ extends LimitedRateLoadExecutorBase<T> {
 				);
 				buffSize = Constants.BUFF_SIZE_LO;
 			}
+		} else {
+			buffSize = Constants.BUFF_SIZE_LO;
 		}
 		LOG.debug(
 			Markers.MSG, "Determined buffer size of {} for \"{}\"",
@@ -89,9 +77,9 @@ extends LimitedRateLoadExecutorBase<T> {
 		);
 		this.ioConfigCopy.setBuffSize(buffSize);
 		//
-		switch(loadType) {
+		/*switch(loadType) {
 			case APPEND:
-			case CREATE:
+			case WRITE:
 				if(sizeMin < 0) {
 					throw new IllegalArgumentException(
 						"Min data item size is less than zero: " + SizeUtil.formatSize(sizeMin)
@@ -121,86 +109,86 @@ extends LimitedRateLoadExecutorBase<T> {
 		this.sizeMin = sizeMin;
 		sizeRange = sizeMax - sizeMin;
 		this.sizeBias = sizeBias;
-		this.countUpdPerReq = countUpdPerReq;
+		this.countUpdPerReq = countUpdPerReq;*/
 	}
 	//
-	private void scheduleAppend(final T dataItem) {
-		final long nextSize = sizeMin +
-			(long) (Math.pow(ThreadLocalRandom.current().nextDouble(), sizeBias) * sizeRange);
-		try {
-			dataItem.scheduleAppend(nextSize);
-		} catch(final IllegalArgumentException e) {
-			LogUtil.exception(
-				LOG, Level.WARN, e,
-				"Failed to schedule the append operation for the data item"
-			);
-		}
-		if(LOG.isTraceEnabled(Markers.MSG)) {
-			LOG.trace(
-				Markers.MSG, "Append the object \"{}\": +{}",
-				dataItem, SizeUtil.formatSize(nextSize)
-			);
-		}
-	}
-	//
-	private void scheduleUpdate(final T dataItem) {
-		if(dataItem.getSize() > 0) {
-			dataItem.scheduleRandomUpdates(countUpdPerReq);
-			if(LOG.isTraceEnabled(Markers.MSG)) {
-				LOG.trace(
-					Markers.MSG, "Modified {} ranges for object \"{}\"", countUpdPerReq, dataItem
-				);
-			}
-		} else {
-			throw new RejectedExecutionException("It's impossible to update empty data item");
-		}
-	}
-	/** intercepts the data items which should be scheduled for update or append */
-	@Override
-	public final void put(final T dataItem)
-	throws IOException {
-		try {
-			switch(loadType) {
-				case APPEND:
-					scheduleAppend(dataItem);
-					break;
-				case UPDATE:
-					scheduleUpdate(dataItem);
-					break;
-			}
-		} catch(final IllegalArgumentException e) {
-			LogUtil.exception(
-				LOG, Level.WARN, e, "Failed to schedule {} for the data item",
-				loadType.name().toLowerCase()
-			);
-		}
-		//
-		super.put(dataItem);
-	}
-	//
-	@Override
-	public final int put(final List<T> dataItems, final int from, final int to)
-	throws IOException {
-		try {
-			switch(loadType) {
-				case APPEND:
-					for(int i = from; i < to; i ++) {
-						scheduleAppend(dataItems.get(i));
-					}
-					break;
-				case UPDATE:
-					for(int i = from; i < to; i ++) {
-						scheduleUpdate(dataItems.get(i));
-					}
-					break;
-			}
-		} catch(final IllegalArgumentException e) {
-			LogUtil.exception(
-				LOG, Level.WARN, e, "Failed to schedule {} for the data items",
-				loadType.name().toLowerCase()
-			);
-		}
-		//
-		return super.put(dataItems, from, to);
-	}
+//	private void scheduleAppend(final T dataItem) {
+//		final long nextSize = sizeMin +
+//			(long) (Math.pow(ThreadLocalRandom.current().nextDouble(), sizeBias) * sizeRange);
+//		try {
+//			dataItem.scheduleAppend(nextSize);
+//		} catch(final IllegalArgumentException e) {
+//			LogUtil.exception(
+//				LOG, Level.WARN, e,
+//				"Failed to schedule the append operation for the data item"
+//			);
+//		}
+//		if(LOG.isTraceEnabled(Markers.MSG)) {
+//			LOG.trace(
+//				Markers.MSG, "Append the object \"{}\": +{}",
+//				dataItem, SizeUtil.formatSize(nextSize)
+//			);
+//		}
+//	}
+//	//
+//	private void scheduleUpdate(final T dataItem) {
+//		if(dataItem.getSize() > 0) {
+//			dataItem.scheduleRandomUpdates(countUpdPerReq);
+//			if(LOG.isTraceEnabled(Markers.MSG)) {
+//				LOG.trace(
+//					Markers.MSG, "Modified {} ranges for object \"{}\"", countUpdPerReq, dataItem
+//				);
+//			}
+//		} else {
+//			throw new RejectedExecutionException("It's impossible to update empty data item");
+//		}
+//	}
+//	/** intercepts the data items which should be scheduled for update or append */
+//	@Override
+//	public final void put(final T dataItem)
+//	throws IOException {
+//		try {
+//			switch(loadType) {
+//				case APPEND:
+//					scheduleAppend(dataItem);
+//					break;
+//				case UPDATE:
+//					scheduleUpdate(dataItem);
+//					break;
+//			}
+//		} catch(final IllegalArgumentException e) {
+//			LogUtil.exception(
+//				LOG, Level.WARN, e, "Failed to schedule {} for the data item",
+//				loadType.name().toLowerCase()
+//			);
+//		}
+//		//
+//		super.put(dataItem);
+//	}
+//	//
+//	@Override
+//	public final int put(final List<T> dataItems, final int from, final int to)
+//	throws IOException {
+//		try {
+//			switch(loadType) {
+//				case APPEND:
+//					for(int i = from; i < to; i ++) {
+//						scheduleAppend(dataItems.get(i));
+//					}
+//					break;
+//				case UPDATE:
+//					for(int i = from; i < to; i ++) {
+//						scheduleUpdate(dataItems.get(i));
+//					}
+//					break;
+//			}
+//		} catch(final IllegalArgumentException e) {
+//			LogUtil.exception(
+//				LOG, Level.WARN, e, "Failed to schedule {} for the data items",
+//				loadType.name().toLowerCase()
+//			);
+//		}
+//		//
+//		return super.put(dataItems, from, to);
+//	}
 }

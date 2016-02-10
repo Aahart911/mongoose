@@ -112,14 +112,9 @@ implements WSDataLoadBuilderSvc<T, U> {
 			);
 		}
 		//
-		final int minThreadCount = getMinIoThreadCount(
-			ThreadUtil.getWorkerCount(), storageNodeAddrs.length, threadCount
-		);
-		//
 		return (U) new BasicWSDataLoadSvc<>(
-			ctxConfig, wsReqConf, storageNodeAddrs, threadCount, minThreadCount,
-			itemSrc == null ? getDefaultItemSource() : itemSrc,
-			limitCount, minObjSize, maxObjSize, objSizeBias, limitRate, updatesPerItem
+			ctxConfig, wsReqConf, storageNodeAddrs, threadCount,
+			itemSrc == null ? getDefaultItemSource() : itemSrc, limitCount, limitRate
 		);
 	}
 	//

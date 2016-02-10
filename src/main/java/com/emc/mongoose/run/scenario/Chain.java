@@ -82,7 +82,7 @@ implements Runnable {
 					loadBuilder.setLoadType(loadType);
 					// determine the items source for the next load job
 					if(prevLoadJob == null) {
-						if(IOTask.Type.CREATE.equals(loadType)) {
+						if(IOTask.Type.WRITE.equals(loadType)) {
 							loadBuilder.useNewItemSrc();
 						} else {
 							loadBuilder.useContainerListingItemSrc();

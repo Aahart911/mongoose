@@ -51,5 +51,4 @@ public abstract class SizeUtil {
 			x, z > 0 ? SIZE_UNITS.charAt(z - 1) : ""
 		).toUpperCase();
 	}
-	//
 }

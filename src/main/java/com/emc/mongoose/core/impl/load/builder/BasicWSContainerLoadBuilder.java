@@ -84,12 +84,8 @@ implements WSContainerLoadBuilder<T, C, U> {
 		final WSRequestConfig wsReqConf = WSRequestConfig.class.cast(ioConfig);
 		final BasicConfig ctxConfig = BasicConfig.getContext();
 		//
-		final int minThreadCount = getMinIoThreadCount(
-			ThreadUtil.getWorkerCount(), storageNodeAddrs.length, threadCount
-		);
-		//
 		return (U) new BasicWSContainerLoadExecutor<>(
-			ctxConfig, wsReqConf, storageNodeAddrs, threadCount, minThreadCount,
+			ctxConfig, wsReqConf, storageNodeAddrs, threadCount,
 			itemSrc == null ? getDefaultItemSource() : itemSrc, limitCount, limitRate
 		);
 	}

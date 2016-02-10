@@ -68,7 +68,7 @@ implements Runnable {
 				DEFAULT_DATA_SIZE
 			);
 			LOG.info(Markers.MSG, "Written successfully {} items", nWritten);
-			// update the created items
+			/* update the created items
 			LOG.info(Markers.MSG, "Start updating {} items", itemBuff.size());
 			final ItemDst<WSObject> dataDstU = new ItemBinFileDst<>();
 			final long nUpdated = client.update(
@@ -106,7 +106,7 @@ implements Runnable {
 			final long nRead2 = client.read(
 				dataDstU2.getItemSrc(), null, nUpdated2, DEFAULT_CONN_PER_NODE, true
 			);
-			LOG.info(Markers.MSG, "Read and verified successfully {} items", nRead2);
+			LOG.info(Markers.MSG, "Read and verified successfully {} items", nRead2);*/
 			// recreate the items
 			final ItemDst<WSObject> dataDstW2 = new ItemCSVFileDst<>(
 				(Class<? extends WSObject>) BasicWSObject.class,

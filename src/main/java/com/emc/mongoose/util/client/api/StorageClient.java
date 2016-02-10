@@ -116,8 +116,8 @@ extends Closeable {
 	 @param src data items info source
 	 @throws java.lang.IllegalStateException if no data items list is available and no bucket/container is specified
 	 */
-	long update(final ItemSrc<T> src)
-	throws IllegalStateException, InterruptedException, IOException;
+	//long update(final ItemSrc<T> src)
+	//throws IllegalStateException, InterruptedException, IOException;
 
 	/**
 	 Update the data items in a customized way.
@@ -129,10 +129,10 @@ extends Closeable {
 	 @throws java.lang.IllegalArgumentException if non-positive value is passed
 	 @throws java.lang.IllegalStateException if no data items list is available and no bucket/container is specified
 	 */
-	long update(
-		final ItemSrc<T> src, final ItemDst<T> dst,
-		final long maxCount, final int connPerNodeCount, final int countPerTime
-	) throws IllegalArgumentException, IllegalStateException, InterruptedException, IOException;
+	//long update(
+	//	final ItemSrc<T> src, final ItemDst<T> dst,
+	//	final long maxCount, final int connPerNodeCount, final int countPerTime
+	//) throws IllegalArgumentException, IllegalStateException, InterruptedException, IOException;
 
 	/**
 	 Append the data items using the specified data items source and the specified fixed augment size, do not store the output data items info.
@@ -140,8 +140,8 @@ extends Closeable {
 	 @param size the augment size to append to each data item
 	 @throws java.lang.IllegalStateException if no data items list is available and no bucket/container is specified
 	 */
-	long append(final ItemSrc<T> src, final long size)
-	throws IllegalStateException, InterruptedException, IOException;
+	//long append(final ItemSrc<T> src, final long size)
+	//throws IllegalStateException, InterruptedException, IOException;
 
 	/**
 	 Append the data items using the specified data items source and the specified fixed augment size.
@@ -152,10 +152,10 @@ extends Closeable {
 	 @param size the augment size to append to each data item
 	 @throws java.lang.IllegalStateException if no data items list is available and no bucket/container is specified
 	 */
-	long append(
-		final ItemSrc<T> src, final ItemDst<T> dst,
-		final long maxCount, final int connPerNodeCount, final long size
-	) throws IllegalStateException, InterruptedException, IOException;
+	//long append(
+	//	final ItemSrc<T> src, final ItemDst<T> dst,
+	//	final long maxCount, final int connPerNodeCount, final long size
+	//) throws IllegalStateException, InterruptedException, IOException;
 
 	/**
 	 Append the data items in a customized way using the specified distribution of the augment size.
@@ -170,9 +170,9 @@ extends Closeable {
 	 @throws IllegalArgumentException if non-positive value is passed
 	 @throws IllegalStateException if no data items list is available and no bucket/container is specified
 	 */
-	long append(
-		final ItemSrc<T> src, final ItemDst<T> dst,
-		final long maxCount, final int connPerNodeCount,
-		final long sizeMin, final long sizeMax, final float sizeBias
-	) throws IllegalArgumentException, IllegalStateException, InterruptedException, IOException;
+	//long append(
+	//	final ItemSrc<T> src, final ItemDst<T> dst,
+	//	final long maxCount, final int connPerNodeCount,
+	//	final long sizeMin, final long sizeMax, final float sizeBias
+	//) throws IllegalArgumentException, IllegalStateException, InterruptedException, IOException;
 }

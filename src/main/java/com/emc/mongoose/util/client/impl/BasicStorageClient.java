@@ -78,7 +78,7 @@ implements StorageClient<T> {
 		}
 		try(
 			final LoadExecutor<T> loadJobExecutor = loadBuilder
-				.setLoadType(IOTask.Type.CREATE)
+				.setLoadType(IOTask.Type.WRITE)
 				.useNewItemSrc().setItemSrc(src)
 				.setLimitCount(maxCount)
 				.setThreadCount(connPerNodeCount)
@@ -142,6 +142,7 @@ implements StorageClient<T> {
 		}
 	}
 	////////////////////////////////////////////////////////////////////////////////////////////////
+	/*
 	@Override
 	public long update(final ItemSrc<T> src)
 	throws IllegalStateException, InterruptedException, IOException {
@@ -204,7 +205,7 @@ implements StorageClient<T> {
 		) {
 			return executeLoadJob(loadJobExecutor, dst);
 		}
-	}
+	}*/
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	@Override
 	public void close()

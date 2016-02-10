@@ -36,13 +36,10 @@ implements WSContainerLoadSvc<T, C> {
 	//
 	public BasicWSContainerLoadSvc(
 		final BasicConfig appConfig, final WSRequestConfig reqConfig, final String[] addrs,
-		final int connPerNode, final int threadsPerNode,
-		final ItemSrc<C> itemSrc, final long maxCount, final float rateLimit
+		final int threadsPerNode, final ItemSrc<C> itemSrc, final long maxCount,
+		final float rateLimit
 	) {
-		super(
-			appConfig, reqConfig, addrs, connPerNode, threadsPerNode, itemSrc, maxCount,
-			rateLimit
-		);
+		super(appConfig, reqConfig, addrs, threadsPerNode, itemSrc, maxCount, rateLimit);
 	}
 	//
 	@Override

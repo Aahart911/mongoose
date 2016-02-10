@@ -36,17 +36,11 @@ implements WSDataLoadSvc<T> {
 	private final static Logger LOG = LogManager.getLogger();
 	//
 	public BasicWSDataLoadSvc(
-		final BasicConfig appConfig,
-		final WSRequestConfig<T, ? extends Container<T>> reqConfig,
-		final String[] addrs, final int connPerNode, final int threadsPerNode,
-		final ItemSrc<T> itemSrc, final long maxCount,
-		final long sizeMin, final long sizeMax, final float sizeBias,
-		final float rateLimit, final int countUpdPerReq
+		final BasicConfig appConfig, final WSRequestConfig<T, ? extends Container<T>> reqConfig,
+		final String[] addrs, final int threadsPerNode, final ItemSrc<T> itemSrc,
+		final long maxCount, final float rateLimit
 	) {
-		super(
-			appConfig, reqConfig, addrs, connPerNode, threadsPerNode, itemSrc, maxCount,
-			sizeMin, sizeMax, sizeBias, rateLimit, countUpdPerReq
-		);
+		super(appConfig, reqConfig, addrs, threadsPerNode, itemSrc, maxCount, rateLimit);
 	}
 	//
 	@Override

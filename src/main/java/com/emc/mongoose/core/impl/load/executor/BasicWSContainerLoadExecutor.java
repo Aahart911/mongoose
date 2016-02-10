@@ -81,12 +81,9 @@ implements WSContainerLoadExecutor<T, C> {
 	//
 	public BasicWSContainerLoadExecutor(
 		final BasicConfig rtConfig, final WSRequestConfig<T, C> reqConfig, final String[] addrs,
-		final int connCountPerNode, final int threadCount, final ItemSrc<C> itemSrc,
-		final long maxCount, final float rateLimit
+		final int threadCount, final ItemSrc<C> itemSrc, final long maxCount, final float rateLimit
 	) throws ClassCastException {
-		super(
-			rtConfig, reqConfig, addrs, connCountPerNode, threadCount, itemSrc, maxCount, rateLimit
-		);
+		super(rtConfig, reqConfig, addrs, threadCount, itemSrc, maxCount, rateLimit);
 		//
 		this.loadType = reqConfig.getLoadType();
 		wsReqConfigCopy = (WSRequestConfig<T, C>) ioConfigCopy;
@@ -179,8 +176,8 @@ implements WSContainerLoadExecutor<T, C> {
 					(int) timeOutMs : Integer.MAX_VALUE,
 				batchSize
 			);
-			nextConnPool.setDefaultMaxPerRoute(connCountPerNode);
-			nextConnPool.setMaxTotal(connCountPerNode);
+			nextConnPool.setDefaultMaxPerRoute(threadCount);
+			nextConnPool.setMaxTotal(threadCount);
 			connPoolMap.put(nextRoute, nextConnPool);
 		}
 		//

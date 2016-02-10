@@ -90,8 +90,7 @@ implements FileLoadBuilderSvc<T, U> {
 		//
 		return (U) new BasicFileLoadSvc<>(
 			rtConfig, (FileIOConfig) ioConfig, storageNodeAddrs, threadCount, threadCount,
-			itemSrc == null ? getDefaultItemSource() : itemSrc,
-			limitCount, minObjSize, maxObjSize, objSizeBias, limitRate, updatesPerItem
+			itemSrc == null ? getDefaultItemSource() : itemSrc, limitCount, limitRate
 		);
 	}
 	//

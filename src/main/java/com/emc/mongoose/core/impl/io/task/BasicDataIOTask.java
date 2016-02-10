@@ -27,7 +27,7 @@ implements DataIOTask<T> {
 		item.reset();
 		currDataLayerIdx = item.getCurrLayerIndex();
 		switch(ioType) {
-			case CREATE:
+			case WRITE:
 				contentSize = item.getSize();
 				break;
 			case READ:
@@ -36,12 +36,12 @@ implements DataIOTask<T> {
 			case DELETE:
 				contentSize = 0;
 				break;
-			case UPDATE:
+			/*case UPDATE:
 				contentSize = item.getUpdatingRangesSize();
 				break;
 			case APPEND:
 				contentSize = item.getAppendSize();
-				break;
+				break;*/
 			default:
 				contentSize = 0;
 				break;

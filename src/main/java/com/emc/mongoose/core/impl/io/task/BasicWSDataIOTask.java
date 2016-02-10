@@ -112,21 +112,19 @@ implements WSDataIOTask<T> {
 		//
 		try {
 			switch(ioType) {
-				case CREATE:
+				case WRITE:
 					produceObjectContent(ioCtl);
 					break;
 				case READ:
-					// TODO here is an ability to specify some content here
 					break;
 				case DELETE:
-					// TODO here is an ability to specify some content here
 					break;
-				case UPDATE:
+				/*case UPDATE:
 					produceUpdatedRangesContent(ioCtl);
 					break;
 				case APPEND:
 					produceAugmentContent(ioCtl);
-					break;
+					break;*/
 			}
 		} catch(final ClosedChannelException e) { // probably a manual interruption
 			status = Status.CANCELLED;

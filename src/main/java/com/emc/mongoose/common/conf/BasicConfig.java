@@ -44,98 +44,6 @@ public final class BasicConfig
 extends HierarchicalConfiguration
 implements AppConifg {
 	//
-	public final static String
-		LIST_SEP = ",",
-		STORAGE_PORT_SEP = ":",
-		//
-		PREFIX_KEY_ALIASING = "aliasing",
-		//
-		KEY_AUTH_ID = "auth.id",
-		KEY_AUTH_SECRET = "auth.secret",
-		//
-		KEY_IO_BUFFER_SIZE_MIN = "io.buffer.size.min",
-		KEY_IO_BUFFER_SIZE_MAX = "io.buffer.size.max",
-		//
-		KEY_DATA_CONTENT_FPATH = "data.content.fpath",
-		//
-		KEY_DATA_RING_SEED = "data.ring.seed",
-		KEY_DATA_RING_SIZE = "data.ring.size",
-		//
-		KEY_DATA_ITEM_COUNT = "load.limit.count",
-		KEY_DATA_SIZE = "data.size",
-		KEY_DATA_SIZE_MIN = "data.size.min",
-		KEY_DATA_SIZE_MAX = "data.size.max",
-		KEY_DATA_SIZE_BIAS = "data.size.bias",
-		KEY_DATA_FS_ACCESS = "data.fsAccess",
-		KEY_ITEM_PREFIX = "item.prefix",
-		KEY_DATA_VERSIONING = "data.versioning",
-		//
-		KEY_HTTP_CUSTOM_HEADERS = "http.customHeaders",
-		KEY_HTTP_PIPELINING = "http.pipelining",
-		//
-		KEY_LOAD_CONNS = "load.connections",
-		KEY_LOAD_SERVER_ADDRS = "load.server.addrs",
-		KEY_LOAD_SERVER_ASSIGN2_NODE = "load.server.assignTo.node",
-		KEY_CREATE_CONNS = "load.type.create.connections",
-		KEY_READ_CONNS = "load.type.read.connections",
-		KEY_UPDATE_CONNS = "load.type.update.connections",
-		KEY_DELETE_CONNS = "load.type.delete.connections",
-		KEY_APPEND_CONNS = "load.type.append.connections",
-		KEY_LOAD_WORKERS = "load.workers",
-		KEY_LOAD_UPDATE_PER_ITEM = "load.type.update.perItem",
-		//
-		KEY_RUN_ID = "run.id",
-		KEY_RUN_MODE = "run.mode",
-		KEY_SCENARIO_NAME = "scenario.name",
-		KEY_LOAD_METRICS_PERIOD_SEC = "load.metricsPeriodSec",
-		KEY_LOAD_LIMIT_COUNT = "load.limit.count",
-		KEY_LOAD_LIMIT_TIME = "load.limit.time",
-		KEY_LOAD_LIMIT_RATE = "load.limit.rate",
-		KEY_LOAD_LIMIT_REQSLEEP_MILLISEC = "load.limit.reqSleepMilliSec",
-		KEY_RUN_VERSION = "run.version",
-		//
-		KEY_REMOTE_SERVE_JMX = "remote.serveJMX",
-		KEY_REMOTE_PORT_CONTROL = "remote.port.control",
-		KEY_REMOTE_PORT_MONITOR = "remote.port.monitor",
-		KEY_REMOTE_PORT_WEBUI = "remote.port.webui",
-		//
-		KEY_STORAGE_ADDRS = "storage.addrs",
-		KEY_STORAGE_SCHEME = "storage.scheme",
-		KEY_STORAGE_NAMESPACE = "storage.namespace",
-		//
-		KEY_STORAGE_MOCK_CAPACITY = "storage.mock.capacity",
-		KEY_STORAGE_MOCK_CONTAINER_COUNT_LIMIT = "storage.mock.container.countLimit",
-		KEY_STORAGE_MOCK_CONTAINER_CAPACITY = "storage.mock.container.capacity",
-		KEY_STORAGE_MOCK_HEAD_COUNT = "storage.mock.headCount",
-		KEY_STORAGE_MOCK_WORKERS_PER_SOCKET = "storage.mock.workersPerSocket",
-		//
-		KEY_API_NAME = "api.name",
-		KEY_API_S3_BUCKET = "api.type.s3.bucket",
-		KEY_API_ATMOS_SUBTENANT = "api.type.atmos.subtenant",
-		KEY_API_SWIFT_AUTH_TOKEN = "api.type.swift.authToken",
-		KEY_API_SWIFT_CONTAINER = "api.type.swift.container",
-		//  Single
-		KEY_SCENARIO_SINGLE_LOAD = "scenario.type.single.load",
-		//  Chain
-		KEY_SCENARIO_CHAIN_LOAD = "scenario.type.chain.load",
-		KEY_SCENARIO_CHAIN_CONCURRENT = "scenario.type.chain.concurrent",
-		KEY_SCENARIO_CHAIN_ITEMSBUFFER = "scenario.type.chain.itemsBuffer",
-		//  Rampup
-		KEY_SCENARIO_RAMPUP_SIZES = "scenario.type.rampup.sizes",
-		KEY_SCENARIO_RAMPUP_CONN_COUNTS = "scenario.type.rampup.connCounts",
-		//
-		KEY_RUN_RESUME_ENABLED = "run.resume.enabled",
-		//
-		KEY_ITEM_CLASS = "item.class",
-		KEY_ITEM_NAMING = "item.naming",
-		KEY_ITEM_SRC_FILE = "item.src.file",
-		KEY_LOAD_CIRCULAR = "load.circular",
-		KEY_ITEM_SRC_RANDOM = "item.src.random",
-		KEY_ITEM_SRC_BATCH_SIZE = "item.src.batchSize",
-		KEY_ITEM_QUEUE_MAX_SIZE = "item.queue.maxSize",
-		//
-		FNAME_CONF = "mongoose.json";
-	//
 	private static InheritableThreadLocal<BasicConfig>
 		CONTEXT_CONFIG = new InheritableThreadLocal<>();
 	private static final List<String>
@@ -235,7 +143,7 @@ implements AppConifg {
 	private static void initImmutableParams() {
 		IMMUTABLE_PARAMS.add(KEY_RUN_MODE);
 		IMMUTABLE_PARAMS.add(KEY_RUN_VERSION);
-		IMMUTABLE_PARAMS.add(KEY_SCENARIO_NAME);
+		//IMMUTABLE_PARAMS.add(KEY_SCENARIO_NAME);
 	}
 	//
 	public final static Map<String, String[]> MAP_OVERRIDE = new HashMap<>();

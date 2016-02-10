@@ -283,12 +283,6 @@ implements LoadBuilder<T, U> {
 		}
 	}
 	//
-	protected final int getMinIoThreadCount(
-		final int threadCount, final int nodeCount, final int connCountPerNode
-	) {
-		return Math.min(Math.max(threadCount, nodeCount), nodeCount * connCountPerNode);
-	}
-	//
 	protected abstract U buildActually()
 	throws RemoteException;
 	//

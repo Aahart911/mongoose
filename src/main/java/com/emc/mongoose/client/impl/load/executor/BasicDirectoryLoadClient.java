@@ -24,12 +24,12 @@ public class BasicDirectoryLoadClient<
 > extends LoadClientBase<C, W> implements DirectoryLoadClient<T, C, W> {
 	//
 	public BasicDirectoryLoadClient(
-		final BasicConfig rtConfig, final FileIOConfig<T, C> ioConfig,
-		final String[] addrs, final int connCountPerNode, final int threadCount,
-		final ItemSrc<C> itemSrc, final long maxCount, final Map<String, W> remoteLoadMap
+		final BasicConfig rtConfig, final FileIOConfig<T, C> ioConfig, final String[] addrs,
+		final int threadCount, final ItemSrc<C> itemSrc, final long maxCount,
+		final Map<String, W> remoteLoadMap
 	) throws RemoteException {
 		super(
-			rtConfig, ioConfig, addrs, connCountPerNode, threadCount, itemSrc, maxCount,
+			rtConfig, ioConfig, addrs, threadCount, itemSrc, maxCount,
 			remoteLoadMap
 		);
 	}

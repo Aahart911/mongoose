@@ -32,11 +32,10 @@ extends LoadExecutorBase<T> {
 	protected LimitedRateLoadExecutorBase(
 		final BasicConfig appConfig,
 		final IOConfig<? extends DataItem, ? extends Container<? extends DataItem>> ioConfig,
-		final String[] addrs, final int connCountPerNode, final int threadCount,
-		final ItemSrc<T> itemSrc, final long maxCount,
+		final String[] addrs, final int threadCount, final ItemSrc<T> itemSrc, final long maxCount,
 		final float rateLimit
 	) throws ClassCastException {
-		super(appConfig, ioConfig, addrs, connCountPerNode, threadCount, itemSrc, maxCount);
+		super(appConfig, ioConfig, addrs, threadCount, itemSrc, maxCount);
 		//
 		if(rateLimit < 0) {
 			throw new IllegalArgumentException("Frequency rate limit shouldn't be a negative value");

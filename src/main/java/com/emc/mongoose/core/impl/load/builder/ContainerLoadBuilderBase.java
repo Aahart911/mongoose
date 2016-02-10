@@ -1,15 +1,15 @@
 package com.emc.mongoose.core.impl.load.builder;
 //
+import com.emc.mongoose.common.conf.AppConifg;
 import com.emc.mongoose.common.conf.BasicConfig;
 import com.emc.mongoose.common.log.LogUtil;
-import com.emc.mongoose.core.api.item.base.ItemNamingScheme;
 import com.emc.mongoose.core.api.item.container.Container;
 import com.emc.mongoose.core.api.item.data.DataItem;
 import com.emc.mongoose.core.api.item.base.ItemSrc;
 import com.emc.mongoose.core.api.io.task.IOTask;
 import com.emc.mongoose.core.api.load.builder.ContainerLoadBuilder;
 import com.emc.mongoose.core.api.load.executor.ContainerLoadExecutor;
-import com.emc.mongoose.core.impl.item.base.BasicItemNamingScheme;
+import com.emc.mongoose.core.impl.item.base.ItemIdGenerator;
 import com.emc.mongoose.core.impl.item.base.ItemCSVFileSrc;
 import com.emc.mongoose.core.impl.item.data.NewContainerSrc;
 import org.apache.logging.log4j.Level;
@@ -66,20 +66,20 @@ implements ContainerLoadBuilder<T, C, U>{
 	private ItemSrc getNewItemSrc()
 	throws NoSuchMethodException {
 		final String ns = rtConfig.getItemNaming();
-		ItemNamingScheme.Type namingSchemeType = ItemNamingScheme.Type.RANDOM;
+		AppConifg.ItemNamingType namingType = AppConifg.ItemNamingType.RANDOM;
 		if(ns != null && !ns.isEmpty()) {
 			try {
-				namingSchemeType = ItemNamingScheme.Type.valueOf(ns.toUpperCase());
+				namingType = AppConifg.ItemNamingType.valueOf(ns.toUpperCase());
 			} catch(final IllegalArgumentException e) {
 				LogUtil.exception(
 					LOG, Level.WARN, e,
 					"Failed to parse the naming scheme \"{}\", acceptable values are: {}",
-					ns, Arrays.toString(ItemNamingScheme.Type.values())
+					ns, Arrays.toString(AppConifg.ItemNamingType.values())
 				);
 			}
 		}
 		return new NewContainerSrc<>(
-			ioConfig.getContainerClass(), new BasicItemNamingScheme(namingSchemeType)
+			ioConfig.getContainerClass(), new ItemIdGenerator(namingType)
 		);
 	}
 	//
@@ -89,7 +89,7 @@ implements ContainerLoadBuilder<T, C, U>{
 			if(flagUseNoneItemSrc) {
 				return null;
 			} else if(flagUseContainerItemSrc && flagUseNewItemSrc) {
-				if(IOTask.Type.CREATE.equals(ioConfig.getLoadType())) {
+				if(IOTask.Type.WRITE.equals(ioConfig.getLoadType())) {
 					getNewItemSrc();
 				}
 			} else if(flagUseNewItemSrc) {

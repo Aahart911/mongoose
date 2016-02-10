@@ -41,7 +41,7 @@ implements IOConfig<T, C> {
 	//
 	protected IOConfigBase() {
 		appConfig = BasicConfig.getContext();
-		loadType = IOTask.Type.CREATE;
+		loadType = IOTask.Type.WRITE;
 		contentSrc = ContentSourceBase.getDefault();
 		verifyContentFlag = appConfig.getReadVerifyContent();
 		nameSpace = appConfig.getStorageNameSpace();

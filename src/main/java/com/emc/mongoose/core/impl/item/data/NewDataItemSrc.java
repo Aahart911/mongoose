@@ -1,10 +1,13 @@
 package com.emc.mongoose.core.impl.item.data;
 //
-import com.emc.mongoose.core.api.item.base.ItemNamingScheme;
+import com.emc.mongoose.common.conf.ValueGenerator;
+//
 import com.emc.mongoose.core.api.item.data.DataItem;
 import com.emc.mongoose.core.api.item.data.ContentSource;
 import com.emc.mongoose.core.api.item.base.ItemSrc;
 //
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 //
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -17,8 +20,10 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class NewDataItemSrc<T extends DataItem>
 implements ItemSrc<T> {
 	//
+	private final static Logger LOG = LogManager.getLogger();
+	//
 	private final Constructor<T> itemConstructor;
-	private final ItemNamingScheme namingScheme;
+	private final ValueGenerator<Long> itemIdGenerator;
 	private final ContentSource contentSrc;
 	private final long minObjSize, maxObjSize, sizeRange;
 	private final float objSizeBias;
@@ -26,11 +31,12 @@ implements ItemSrc<T> {
 	private T lastItem = null;
 	//
 	public NewDataItemSrc(
-		final Class<T> dataCls, final ItemNamingScheme namingScheme, final ContentSource contentSrc,
+		final Class<T> dataCls,
+		final ValueGenerator<Long> itemIdGenerator, final ContentSource contentSrc,
 		final long minObjSize, final long maxObjSize, final float objSizeBias
 	) throws NoSuchMethodException, IllegalArgumentException {
 		this.itemConstructor = dataCls.getConstructor(Long.class, Long.class, ContentSource.class);
-		this.namingScheme = namingScheme;
+		this.itemIdGenerator = itemIdGenerator;
 		this.contentSrc = contentSrc;
 		this.minObjSize = minObjSize;
 		this.maxObjSize = maxObjSize;
@@ -41,6 +47,10 @@ implements ItemSrc<T> {
 				"Min size " + minObjSize + " is greater than max size " + maxObjSize
 			);
 		}
+	}
+	//
+	public long getApproxDataItemsSize() {
+		return minObjSize == maxObjSize ? minObjSize : (minObjSize + maxObjSize / 2);
 	}
 	//
 	private long nextSize() {
@@ -59,9 +69,7 @@ implements ItemSrc<T> {
 	public final T get()
 	throws IOException {
 		try {
-			return itemConstructor.newInstance(
-				namingScheme.getNext(), nextSize(), contentSrc
-			);
+			return itemConstructor.newInstance(itemIdGenerator.get(), nextSize(), contentSrc);
 		} catch(final InstantiationException|IllegalAccessException|InvocationTargetException e) {
 			throw new IOException(e);
 		}
@@ -73,9 +81,7 @@ implements ItemSrc<T> {
 		try {
 			for(int i = 0; i < maxCount; i ++) {
 				buffer.add(
-					itemConstructor.newInstance(
-						namingScheme.getNext(), nextSize(), contentSrc
-					)
+					itemConstructor.newInstance(itemIdGenerator.get(), nextSize(), contentSrc)
 				);
 			}
 		} catch(final InstantiationException|IllegalAccessException|InvocationTargetException e) {

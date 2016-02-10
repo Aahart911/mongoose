@@ -103,12 +103,9 @@ implements WSContainerLoadBuilderSvc<T, C, U> {
 		final BasicConfig ctxConfig = BasicConfig.getContext();
 		// the statement below fixes hi-level API distributed mode usage and tests
 		ctxConfig.setProperty(BasicConfig.KEY_RUN_MODE, Constants.RUN_MODE_SERVER);
-		final int minThreadCount = getMinIoThreadCount(
-			ThreadUtil.getWorkerCount(), storageNodeAddrs.length, threadCount
-		);
 		//
 		return (U) new BasicWSContainerLoadSvc<>(
-			ctxConfig, wsReqConf, storageNodeAddrs, threadCount, minThreadCount,
+			ctxConfig, wsReqConf, storageNodeAddrs, threadCount,
 			itemSrc == null ? getDefaultItemSource() : itemSrc, limitCount, limitRate
 		);
 	}

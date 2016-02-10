@@ -30,13 +30,11 @@ implements WSDataLoadClient<T, W> {
 	//
 	public BasicWSDataLoadClient(
 		final BasicConfig rtConfig, final WSRequestConfig<T, ? extends Container<T>> reqConfig,
-		final String addrs[], final int connCountPerNode, final int threadCount,
-		final ItemSrc<T> itemSrc, final long maxCount,
+		final String addrs[], final int threadCount, final ItemSrc<T> itemSrc, final long maxCount,
 		final Map<String, W> remoteLoadMap
 	) throws RemoteException {
 		super(
-			rtConfig, reqConfig, addrs, connCountPerNode, threadCount, itemSrc, maxCount,
-			remoteLoadMap
+			rtConfig, reqConfig, addrs, threadCount, itemSrc, maxCount, remoteLoadMap
 		);
 	}
 	//

@@ -37,14 +37,10 @@ implements DirectoryLoadExecutor<T, C> {
 	private final ExecutorService ioTaskExecutor;
 	//
 	public BasicDirectoryLoadExecutor(
-			final BasicConfig rtConfig,
-			final FileIOConfig<T, C> ioConfig, final String[] addrs,
-			final int connCountPerNode, final int threadCount, final ItemSrc<C> itemSrc,
-			final long maxCount, final float rateLimit
+		final BasicConfig rtConfig, final FileIOConfig<T, C> ioConfig, final String[] addrs,
+		final int threadCount, final ItemSrc<C> itemSrc, final long maxCount, final float rateLimit
 	) throws ClassCastException {
-		super(
-			rtConfig, ioConfig, addrs, connCountPerNode, threadCount, itemSrc, maxCount, rateLimit
-		);
+		super(rtConfig, ioConfig, addrs, threadCount, itemSrc, maxCount, rateLimit);
 		ioTaskExecutor = new ThreadPoolExecutor(
 			threadCount, threadCount, 0, TimeUnit.SECONDS,
 			new ArrayBlockingQueue<Runnable>(maxItemQueueSize), new IOWorker.Factory(getName())

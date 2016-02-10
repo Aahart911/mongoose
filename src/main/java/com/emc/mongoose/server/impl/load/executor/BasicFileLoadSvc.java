@@ -35,17 +35,11 @@ implements FileLoadSvc<T> {
 	private final static Logger LOG = LogManager.getLogger();
 	//
 	public BasicFileLoadSvc(
-		final BasicConfig rtConfig,
-		final FileIOConfig<T, ? extends Directory<T>> ioConfig,
-		final String[] addrs, final int connCountPerNode, final int threadCount,
-		final ItemSrc<T> itemSrc, final long maxCount,
-		final long sizeMin, final long sizeMax, final float sizeBias,
-		final float rateLimit, final int countUpdPerReq
+		final BasicConfig rtConfig, final FileIOConfig<T, ? extends Directory<T>> ioConfig,
+		final String[] addrs, final int threadCount, final ItemSrc<T> itemSrc, final long maxCount,
+		final float rateLimit
 	) throws ClassCastException {
-		super(
-			rtConfig, ioConfig, addrs, connCountPerNode, threadCount, itemSrc, maxCount,
-			sizeMin, sizeMax, sizeBias, rateLimit, countUpdPerReq
-		);
+		super(rtConfig, ioConfig, addrs, threadCount, itemSrc, maxCount, rateLimit);
 	}
 	//
 	@Override
