@@ -56,14 +56,24 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 @Sharable
 public class NagainaAtmosRequestHandler<T extends HttpDataItemMock> extends NagainaRequestHandlerBase<T> {
 
-	private final static Logger LOG = LogManager.getLogger();
-	private final static String
+	private static final Logger LOG = LogManager.getLogger();
+	private static final String
 			URI_BASE_PATH = "/rest",
 			OBJ_PATH = URI_BASE_PATH + "/objects",
 			NS_PATH = URI_BASE_PATH + "/namespace",
 			AT_PATH = URI_BASE_PATH + "/accesstokens",
 			ST_PATH = URI_BASE_PATH + "/subtenant",
 			STS_PATH = ST_PATH + "s/";
+	private static final DocumentBuilder DOM_BUILDER;
+	private static final TransformerFactory TF = TransformerFactory.newInstance();
+
+	static {
+		try {
+			DOM_BUILDER = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+		} catch (final ParserConfigurationException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	public NagainaAtmosRequestHandler(
 		final AppConfig appConfig, final HttpStorageMock<T> sharedStorage
@@ -72,7 +82,7 @@ public class NagainaAtmosRequestHandler<T extends HttpDataItemMock> extends Naga
 	}
 
 	@Override
-	protected boolean checkApiMatch(final HttpRequest request) {
+	protected final boolean checkApiMatch(final HttpRequest request) {
 		return request.getUri().startsWith(URI_BASE_PATH);
 	}
 
@@ -151,33 +161,17 @@ public class NagainaAtmosRequestHandler<T extends HttpDataItemMock> extends Naga
 		} else {
 			setHttpResponseStatusInContext(ctx, BAD_REQUEST);
 		}
-		if (ctx.attr(AttributeKey.<Boolean>valueOf(ctxWriteFlagKey)).get()) {
-			final HttpResponseStatus status = ctx
-				.attr(AttributeKey.<HttpResponseStatus>valueOf(responseStatusKey)).get();
-			response.setStatus(status != null ? status : OK);
-			HttpHeaders.setContentLength(response, 0);
-			ctx.write(response);
-		}
-	}
-
-	private final static DocumentBuilder DOM_BUILDER;
-	private final static TransformerFactory TF = TransformerFactory.newInstance();
-
-	static {
-		try {
-			DOM_BUILDER = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-		} catch (final ParserConfigurationException e) {
-			throw new RuntimeException(e);
-		}
+		writeResponse(ctx.attr(AttributeKey.<Boolean>valueOf(ctxWriteFlagKey)).get(), ctx);
 	}
 
 	@Override
 	protected void handleContainerList(final String subtenant, final ChannelHandlerContext ctx) {
+		// there is a distinguish behavior for Atmos Protocol
 	}
 
-	private void handleContainerList(String subtenant, String objId, ChannelHandlerContext ctx) {
+	private void handleContainerList(final String subtenant, final String objId, final ChannelHandlerContext ctx) {
 		int maxCount = ContainerHelper.DEFAULT_PAGE_SIZE;
-		HttpHeaders headers = ctx.attr(AttributeKey.<HttpRequest>valueOf(requestKey)).get().headers();
+		final HttpHeaders headers = ctx.attr(AttributeKey.<HttpRequest>valueOf(requestKey)).get().headers();
 		if (headers.contains(HttpRequestConfig.KEY_EMC_LIMIT)) {
 			try {
 				maxCount = Integer.parseInt(headers.get(HttpRequestConfig.KEY_EMC_LIMIT));
@@ -189,22 +183,15 @@ public class NagainaAtmosRequestHandler<T extends HttpDataItemMock> extends Naga
 			}
 		}
 
-		List<T> buff = new ArrayList<>(maxCount);
+		final List<T> buff = new ArrayList<>(maxCount);
 		T lastObj;
 		try {
-			lastObj = sharedStorage.listObjects(subtenant, objId, buff, maxCount);
-			if (LOG.isTraceEnabled(Markers.MSG)) {
-				LOG.trace(
-						Markers.MSG, "Bucket \"{}\": generated list of {} objects, last one is \"{}\"",
-						subtenant, buff.size(), lastObj
-				);
-			}
-		} catch (ContainerMockNotFoundException e) {
+			lastObj = listContainer(subtenant, objId, buff, maxCount);
+		} catch (final ContainerMockNotFoundException e) {
 			setHttpResponseStatusInContext(ctx, NOT_FOUND);
 			return;
 		} catch (ContainerMockException e) {
 			setHttpResponseStatusInContext(ctx, INTERNAL_SERVER_ERROR);
-			LogUtil.exception(LOG, Level.WARN, e, "Subtenant \"{}\" failure", subtenant);
 			return;
 		}
 
@@ -212,20 +199,20 @@ public class NagainaAtmosRequestHandler<T extends HttpDataItemMock> extends Naga
 		if (lastObj != null) {
 			header = new AbstractMap.SimpleEntry<>(HttpRequestConfig.KEY_EMC_TOKEN, lastObj.getName());
 		}
-		Document doc = DOM_BUILDER.newDocument();
-		Element eRoot = doc.createElement("ListObjectsResponse");
+		final Document doc = DOM_BUILDER.newDocument();
+		final Element eRoot = doc.createElement("ListObjectsResponse");
 		doc.appendChild(eRoot);
 		//
-		Element e, ee;
+		Element object, objectId;
 		for (final T dataObject : buff) {
-			e = doc.createElement("Object");
-			ee = doc.createElement("ObjectID");
-			ee.appendChild(doc.createTextNode(dataObject.getName()));
-			e.appendChild(ee);
-			eRoot.appendChild(e);
+			object = doc.createElement("Object");
+			objectId = doc.createElement("ObjectID");
+			objectId.appendChild(doc.createTextNode(dataObject.getName()));
+			object.appendChild(objectId);
+			eRoot.appendChild(object);
 		}
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		StreamResult r = new StreamResult(bos);
+		final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		final StreamResult r = new StreamResult(bos);
 		try {
 			TF.newTransformer().transform(new DOMSource(doc), r);
 		} catch (final TransformerException ex) {
@@ -235,8 +222,8 @@ public class NagainaAtmosRequestHandler<T extends HttpDataItemMock> extends Naga
 		}
 		byte[] content = bos.toByteArray();
 		ctx.attr(AttributeKey.<Boolean>valueOf(ctxWriteFlagKey)).set(false);
-		FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.copiedBuffer(content));
-		response.headers().set(CONTENT_TYPE, ContentType.APPLICATION_XML.getMimeType());
+		final FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.copiedBuffer(content));
+		response.headers().set(CONTENT_TYPE, ContentType.APPLICATION_XML.getMimeType()); // todo why is it only here?
 		if (header != null) {
 			response.headers().set(header.getKey(), header.getValue());
 		}

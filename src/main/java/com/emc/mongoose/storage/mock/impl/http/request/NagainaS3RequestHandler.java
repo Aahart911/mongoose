@@ -6,7 +6,6 @@ import com.emc.mongoose.common.log.Markers;
 //
 import com.emc.mongoose.core.api.io.conf.HttpRequestConfig;
 import com.emc.mongoose.core.api.item.data.ContainerHelper;
-import com.emc.mongoose.core.api.item.data.MutableDataItem;
 //
 import com.emc.mongoose.storage.mock.api.ContainerMockException;
 import com.emc.mongoose.storage.mock.api.ContainerMockNotFoundException;
@@ -18,7 +17,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.AttributeKey;
@@ -43,7 +41,6 @@ import java.util.ArrayList;
 import java.util.List;
 //
 import static io.netty.channel.ChannelHandler.Sharable;
-import static io.netty.handler.codec.http.HttpHeaders.Names.AUTHORIZATION;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
@@ -52,12 +49,11 @@ import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 //
 @Sharable
-public class NagainaS3RequestHandler<T extends HttpDataItemMock> extends NagainaRequestHandlerBase<T> {
+public final class NagainaS3RequestHandler<T extends HttpDataItemMock> extends NagainaRequestHandlerBase<T> {
 
-	private final static Logger LOG = LogManager.getLogger();
-	private final static DocumentBuilder DOM_BUILDER;
-	private final static TransformerFactory TF = TransformerFactory.newInstance();
-	private final static String S3_AUTH_PREFIX = "AWS ";
+	private static final Logger LOG = LogManager.getLogger();
+	private static final DocumentBuilder DOM_BUILDER;
+	private static final TransformerFactory TF = TransformerFactory.newInstance();
 
 	private final int prefixLength, idRadix;
 
@@ -71,62 +67,65 @@ public class NagainaS3RequestHandler<T extends HttpDataItemMock> extends Nagaina
 
 	public NagainaS3RequestHandler(final AppConfig appConfig, HttpStorageMock<T> sharedStorage) {
 		super(appConfig, sharedStorage);
-		this.idRadix = appConfig.getItemNamingRadix();
+		idRadix = appConfig.getItemNamingRadix();
 		final String prefix = appConfig.getItemNamingPrefix();
 		prefixLength = prefix == null ? 0 : prefix.length();
 	}
 
 	@Override
-	protected boolean checkApiMatch(HttpRequest request) {
+	protected final boolean checkApiMatch(final HttpRequest request) {
 		return true;
 	}
 
 	@Override
-	public void handleActually(ChannelHandlerContext ctx) {
-		String method = ctx.attr(AttributeKey.<HttpRequest>valueOf(requestKey))
+	public final void handleActually(final ChannelHandlerContext ctx) {
+		final String method = ctx.attr(AttributeKey.<HttpRequest>valueOf(requestKey))
 				.get().getMethod().toString().toUpperCase();
-		String[] uriParams =
-				getUriParams(ctx.attr(AttributeKey.<HttpRequest>valueOf(requestKey))
-						.get().getUri(), 2);
-		String containerName = uriParams[0];
-		String objId = uriParams[1];
-		Long size = ctx.attr(AttributeKey.<Long>valueOf(contentLengthKey)).get();
+		final String uri = ctx.attr(AttributeKey.<HttpRequest>valueOf(requestKey))
+				.get().getUri();
+		final String[] uriParams =
+				getUriParams(uri, 2);
+		final String containerName = uriParams[0];
+		final String objId = uriParams[1];
+		final Long size = ctx.attr(AttributeKey.<Long>valueOf(contentLengthKey)).get();
 		ctx.attr(AttributeKey.<Boolean>valueOf(ctxWriteFlagKey)).set(true);
-		if (containerName != null) {
-			if (objId != null) {
-				long offset;
-				switch (method) {
-					case HttpRequestConfig.METHOD_POST:
-					case HttpRequestConfig.METHOD_PUT:
-						if(prefixLength > 0) {
-							offset = Long.parseLong(objId.substring(prefixLength + 1), idRadix);
-						} else {
-							offset = Long.parseLong(objId, idRadix);
-						}
-						break;
-					default:
-						offset = -1;
+		try {
+			if (containerName != null) {
+				if (objId != null) {
+					final long offset;
+					switch (method) {
+						case HttpRequestConfig.METHOD_POST:
+						case HttpRequestConfig.METHOD_PUT:
+							if (prefixLength > 0) {
+								offset = Long.parseLong(objId.substring(prefixLength + 1), idRadix);
+							} else {
+								offset = Long.parseLong(objId, idRadix);
+							}
+							break;
+						default:
+							offset = -1;
+					}
+					handleGenericDataReq(method, containerName, objId, offset, size, ctx);
+				} else {
+					handleGenericContainerReq(method, containerName, ctx);
 				}
-				handleGenericDataReq(method, containerName, objId, offset, size, ctx);
 			} else {
-				handleGenericContainerReq(method, containerName, ctx);
+				setHttpResponseStatusInContext(ctx, BAD_REQUEST);
 			}
-		} else {
+		} catch (final IllegalArgumentException | IllegalStateException e) {
+			LogUtil.exception(
+					LOG, Level.WARN, e, "Failed to parse the request URI: {}", uri
+			);
 			setHttpResponseStatusInContext(ctx, BAD_REQUEST);
 		}
-		if (ctx.attr(AttributeKey.<Boolean>valueOf(ctxWriteFlagKey)).get()) {
-			HttpResponseStatus status = ctx.attr(AttributeKey.<HttpResponseStatus>valueOf(responseStatusKey)).get();
-			FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, status != null ? status : OK);
-			HttpHeaders.setContentLength(response, 0);
-			ctx.write(response);
-		}
+		writeResponse(ctx.attr(AttributeKey.<Boolean>valueOf(ctxWriteFlagKey)).get(), ctx);
 	}
 
 	@Override
-	protected void handleContainerList(String containerName, ChannelHandlerContext ctx) {
+	protected final void handleContainerList(final String containerName, final ChannelHandlerContext ctx) {
 		int maxCount = ContainerHelper.DEFAULT_PAGE_SIZE;
 		String marker = null;
-		String uri = ctx.attr(AttributeKey.<HttpRequest>valueOf(requestKey)).get().getUri();
+		final String uri = ctx.attr(AttributeKey.<HttpRequest>valueOf(requestKey)).get().getUri();
 		QueryStringDecoder queryStringDecoder = new QueryStringDecoder(uri);
 		if (queryStringDecoder.parameters().containsKey("max-keys")) {
 			maxCount = Integer.parseInt(queryStringDecoder.parameters().get("max-keys").get(0));
@@ -136,17 +135,11 @@ public class NagainaS3RequestHandler<T extends HttpDataItemMock> extends Nagaina
 		if (queryStringDecoder.parameters().containsKey("marker")) {
 			marker = queryStringDecoder.parameters().get("marker").get(0);
 		}
-		List<T> buff = new ArrayList<>(maxCount);
+		final List<T> buff = new ArrayList<>(maxCount);
 		T lastObj;
 		try {
-			lastObj = sharedStorage.listObjects(containerName, marker, buff, maxCount);
-			if (LOG.isTraceEnabled(Markers.MSG)) {
-				LOG.trace(
-						Markers.MSG, "Bucket \"{}\": generated list of {} objects, last one is \"{}\"",
-						containerName, buff.size(), lastObj
-				);
-			}
-		} catch (ContainerMockNotFoundException e) {
+			lastObj = listContainer(containerName, marker, buff, maxCount);
+		} catch (final ContainerMockNotFoundException e) {
 			setHttpResponseStatusInContext(ctx, NOT_FOUND);
 			return;
 		} catch (ContainerMockException e) {
@@ -159,34 +152,34 @@ public class NagainaS3RequestHandler<T extends HttpDataItemMock> extends Nagaina
 		);
 		doc.appendChild(eRoot);
 		//
-		Element e = doc.createElement("Name"), ee;
-		e.appendChild(doc.createTextNode(containerName));
-		eRoot.appendChild(e);
-		e = doc.createElement("IsTruncated");
-		e.appendChild(doc.createTextNode(Boolean.toString(lastObj != null)));
-		eRoot.appendChild(e);
-		e = doc.createElement("Prefix"); // TODO prefix support
-		eRoot.appendChild(e);
-		e = doc.createElement("MaxKeys");
-		e.appendChild(doc.createTextNode(Integer.toString(buff.size())));
-		eRoot.appendChild(e);
-		for (T dataObject : buff) {
-			e = doc.createElement("Contents");
+		Element element = doc.createElement("Name"), ee;
+		element.appendChild(doc.createTextNode(containerName));
+		eRoot.appendChild(element);
+		element = doc.createElement("IsTruncated");
+		element.appendChild(doc.createTextNode(Boolean.toString(lastObj != null)));
+		eRoot.appendChild(element);
+		element = doc.createElement("Prefix"); // TODO prefix support
+		eRoot.appendChild(element);
+		element = doc.createElement("MaxKeys");
+		element.appendChild(doc.createTextNode(Integer.toString(buff.size())));
+		eRoot.appendChild(element);
+		for (final T dataObject : buff) {
+			element = doc.createElement("Contents");
 			ee = doc.createElement("Key");
 			ee.appendChild(doc.createTextNode(dataObject.getName()));
-			e.appendChild(ee);
+			element.appendChild(ee);
 			ee = doc.createElement("Size");
 			ee.appendChild(doc.createTextNode(Long.toString(dataObject.getSize())));
-			e.appendChild(ee);
-			eRoot.appendChild(e);
+			element.appendChild(ee);
+			eRoot.appendChild(element);
 		}
 		final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		final StreamResult r = new StreamResult(bos);
 		try {
 			TF.newTransformer().transform(new DOMSource(doc), r);
-		} catch (TransformerException ex) {
+		} catch (final TransformerException e) {
 			setHttpResponseStatusInContext(ctx, INTERNAL_SERVER_ERROR);
-			LogUtil.exception(LOG, Level.ERROR, ex, "Failed to build bucket XML listing");
+			LogUtil.exception(LOG, Level.ERROR, e, "Failed to build bucket XML listing");
 			return;
 		}
 		byte[] content = bos.toByteArray();

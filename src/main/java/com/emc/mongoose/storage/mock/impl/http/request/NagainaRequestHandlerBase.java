@@ -15,14 +15,7 @@ import com.emc.mongoose.storage.mock.api.StorageMockCapacityLimitReachedExceptio
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.DefaultHttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.LastHttpContent;
-import io.netty.handler.codec.http.QueryStringDecoder;
+import io.netty.handler.codec.http.*;
 import io.netty.util.AttributeKey;
 import io.netty.util.ReferenceCountUtil;
 //
@@ -30,6 +23,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 //
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 //
@@ -38,10 +32,7 @@ import static com.emc.mongoose.core.api.io.conf.HttpRequestConfig.VALUE_RANGE_CO
 import static com.emc.mongoose.core.api.io.conf.HttpRequestConfig.VALUE_RANGE_PREFIX;
 import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpHeaders.Names.RANGE;
-import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
-import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
-import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-import static io.netty.handler.codec.http.HttpResponseStatus.INSUFFICIENT_STORAGE;
+import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 //
 @Sharable
@@ -75,7 +66,7 @@ extends ChannelInboundHandlerAdapter {
 		AttributeKey.<Boolean>valueOf(handlerStatus);
 	}
 
-	abstract protected boolean checkApiMatch(HttpRequest request);
+	abstract protected boolean checkApiMatch(final HttpRequest request);
 
 	@Override
 	public void channelReadComplete(ChannelHandlerContext ctx) {
@@ -86,15 +77,15 @@ extends ChannelInboundHandlerAdapter {
 		ctx.flush();
 	}
 
-	private void processHttpRequest(ChannelHandlerContext ctx, HttpRequest request) {
+	private void processHttpRequest(final ChannelHandlerContext ctx, final HttpRequest request) {
 		ctx.attr(AttributeKey.<HttpRequest>valueOf(requestKey)).set(request);
 		if (request.headers().contains(CONTENT_LENGTH)) {
 			ctx.attr(AttributeKey.<Long>valueOf(contentLengthKey)).set(Long.parseLong(request.headers().get(CONTENT_LENGTH)));
 		}
 	}
 
-	private void processHttpContent(ChannelHandlerContext ctx, HttpContent httpContent) {
-		ByteBuf content = httpContent.content();
+	private void processHttpContent(final ChannelHandlerContext ctx, final HttpContent httpContent) {
+		final ByteBuf content = httpContent.content();
 		if (ctx.attr(AttributeKey.<Long>valueOf(contentLengthKey)) == null) {
 			Long currentContentSize = ctx.attr(AttributeKey.<Long>valueOf(contentLengthKey)).get();
 			ctx.attr(AttributeKey.<Long>valueOf(contentLengthKey)).set(currentContentSize + content.readableBytes());
@@ -129,7 +120,7 @@ extends ChannelInboundHandlerAdapter {
 		ReferenceCountUtil.release(msg);
 	}
 
-	public final void handle(ChannelHandlerContext ctx) {
+	public final void handle(final ChannelHandlerContext ctx) {
 		if (rateLimit > 0) {
 			if (ioStats.getWriteRate() + ioStats.getReadRate() + ioStats.getDeleteRate() > rateLimit) {
 				try {
@@ -154,24 +145,37 @@ extends ChannelInboundHandlerAdapter {
 
 	protected abstract void handleActually(final ChannelHandlerContext ctx);
 
+	protected final void writeResponse(final boolean writeFlag, final ChannelHandlerContext ctx) {
+		if (writeFlag) {
+			HttpResponseStatus status = ctx.attr(AttributeKey.<HttpResponseStatus>valueOf(responseStatusKey)).get();
+			FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, status != null ? status : OK);
+			HttpHeaders.setContentLength(response, 0);
+			ctx.write(response);
+		}
+	}
+
 	protected final void handleGenericDataReq(
 		final String method, final String containerName, final String objId,
 		final Long offset, final Long size, final ChannelHandlerContext ctx
 	) {
-		switch (method) {
-			case HttpRequestConfig.METHOD_POST:
-			case HttpRequestConfig.METHOD_PUT:
-				handleWrite(containerName, objId, offset, size, ctx);
-				break;
-			case HttpRequestConfig.METHOD_GET:
-				handleRead(containerName, objId, offset, ctx);
-				break;
-			case HttpRequestConfig.METHOD_HEAD:
-				setHttpResponseStatusInContext(ctx, OK);
-				break;
-			case HttpRequestConfig.METHOD_DELETE:
-				handleDelete(containerName, objId, offset, ctx);
-				break;
+		if (containerName != null) {
+			switch (method) {
+				case HttpRequestConfig.METHOD_POST:
+				case HttpRequestConfig.METHOD_PUT:
+					handleWrite(containerName, objId, offset, size, ctx);
+					break;
+				case HttpRequestConfig.METHOD_GET:
+					handleRead(containerName, objId, offset, ctx);
+					break;
+				case HttpRequestConfig.METHOD_HEAD:
+					setHttpResponseStatusInContext(ctx, OK);
+					break;
+				case HttpRequestConfig.METHOD_DELETE:
+					handleDelete(containerName, objId, offset, ctx);
+					break;
+			}
+		} else {
+			setHttpResponseStatusInContext(ctx, BAD_REQUEST);
 		}
 	}
 
@@ -191,29 +195,39 @@ extends ChannelInboundHandlerAdapter {
 					size
 				);
 			}
-		} catch (final ContainerMockNotFoundException | ObjectMockNotFoundException e) {
-			setHttpResponseStatusInContext(ctx, NOT_FOUND);
-			ioStats.markWrite(false, size);
-		} catch (final StorageMockCapacityLimitReachedException | ContainerMockException e) {
+		} catch (final StorageMockCapacityLimitReachedException e) {
 			setHttpResponseStatusInContext(ctx, INSUFFICIENT_STORAGE);
 			ioStats.markWrite(false, size);
+		} catch (final ContainerMockNotFoundException e) {
+			setHttpResponseStatusInContext(ctx, NOT_FOUND);
+			ioStats.markWrite(false, size);
+		} catch (final ObjectMockNotFoundException e) {
+			setHttpResponseStatusInContext(ctx, NOT_FOUND);
+			ioStats.markWrite(false, 0);
+		} catch (final ContainerMockException | NumberFormatException e) {
+			setHttpResponseStatusInContext(ctx, INTERNAL_SERVER_ERROR);
+			ioStats.markWrite(false, 0);
+			LogUtil.exception(
+					LOG, Level.ERROR, e, "Failed to perform a range update/append for \"{}\"", objId
+			);
 		}
 	}
 
-	private boolean handlePartialWrite(String containerName, String objId,
-	                                   List<String> rangeHeadersValues, Long size) throws ContainerMockException, ObjectMockNotFoundException {
-		for (String rangeValues : rangeHeadersValues) {
+	private boolean handlePartialWrite(final String containerName, final String objId,
+	                                   final List<String> rangeHeadersValues, final Long size)
+	throws ContainerMockException, ObjectMockNotFoundException {
+		for (final String rangeValues : rangeHeadersValues) {
 			if (rangeValues.startsWith(VALUE_RANGE_PREFIX)) {
-				rangeValues = rangeValues.substring(
+				final String rangeValuesWithoutPrefix = rangeValues.substring(
 						VALUE_RANGE_PREFIX.length(), rangeValues.length()
 				);
-				String[] ranges = rangeValues.split(",");
-				for (String range : ranges) {
-					String[] rangeBorders = range.split(VALUE_RANGE_CONCAT);
+				final String[] ranges = rangeValuesWithoutPrefix.split(",");
+				for (final String range : ranges) {
+					final String[] rangeBorders = range.split(VALUE_RANGE_CONCAT);
 					if (rangeBorders.length == 1) {
 						sharedStorage.appendObject(containerName, objId, Long.parseLong(rangeBorders[0]), size);
 					} else if (rangeBorders.length == 2) {
-						long offset = Long.parseLong(rangeBorders[0]);
+						final long offset = Long.parseLong(rangeBorders[0]);
 						sharedStorage.updateObject(
 								containerName, objId, offset, Long.parseLong(rangeBorders[1]) - offset + 1
 						);
@@ -234,16 +248,16 @@ extends ChannelInboundHandlerAdapter {
 		return true;
 	}
 
-	private void handleRead(String containerName, String objId,
-	                        Long offset, ChannelHandlerContext ctx) {
-		HttpResponse response;
+	private void handleRead(final String containerName, final String objId,
+	                        final Long offset, final ChannelHandlerContext ctx) {
+		final HttpResponse response;
 		try {
 		T obj = sharedStorage.getObject(containerName, objId, offset, 0);
 			if (obj != null) {
 				final long objSize = obj.getSize();
 				ioStats.markRead(true, objSize);
 				if (LOG.isTraceEnabled(Markers.MSG)) {
-					LOG.trace(Markers.MSG, "Send data object with ID: {}", obj);
+					LOG.trace(Markers.MSG, "Send data object with ID: {}", objId);
 				}
 				ctx.attr(AttributeKey.<Boolean>valueOf(ctxWriteFlagKey)).set(false);
 				response = new DefaultHttpResponse(HTTP_1_1, OK);
@@ -259,15 +273,21 @@ extends ChannelInboundHandlerAdapter {
 				setHttpResponseStatusInContext(ctx, NOT_FOUND);
 				ioStats.markRead(false, 0);
 			}
-		} catch (ContainerMockException e) {
+		} catch (final ContainerMockNotFoundException e) {
+			setHttpResponseStatusInContext(ctx, NOT_FOUND);
+			if(LOG.isTraceEnabled(Markers.ERR)) {
+				LOG.trace(Markers.ERR, "No such container: {}", objId);
+			}
+			ioStats.markRead(false, 0);
+		} catch (final ContainerMockException e) {
 			setHttpResponseStatusInContext(ctx, INTERNAL_SERVER_ERROR);
 			LogUtil.exception(LOG, Level.WARN, e, "Container \"{}\" failure", containerName);
 			ioStats.markRead(false, 0);
 		}
 	}
 
-	private void handleDelete(String containerName, String objId,
-	                          Long offset, ChannelHandlerContext ctx) {
+	private void handleDelete(final String containerName, final String objId,
+	                          final Long offset, final ChannelHandlerContext ctx) {
 		try {
 			sharedStorage.deleteObject(containerName, objId, offset, -1);
 			if (LOG.isTraceEnabled(Markers.MSG)) {
@@ -283,7 +303,8 @@ extends ChannelInboundHandlerAdapter {
 		}
 	}
 
-	protected void handleGenericContainerReq(String method, String containerName, ChannelHandlerContext ctx) {
+	protected void handleGenericContainerReq(final String method, final String containerName,
+	                                         final ChannelHandlerContext ctx) {
 		switch (method) {
 			case HttpRequestConfig.METHOD_HEAD:
 				handleContainerExists(containerName, ctx);
@@ -300,23 +321,35 @@ extends ChannelInboundHandlerAdapter {
 		}
 	}
 
-	protected abstract void handleContainerList(String containerName, ChannelHandlerContext ctx);
+	protected abstract void handleContainerList(final String containerName, final ChannelHandlerContext ctx);
 
-	protected void handleContainerCreate(String containerName) {
+	protected final T listContainer(final String containerName, final String marker, final List<T> buff,
+	                                final int maxCount) throws ContainerMockException {
+		T lastObj = sharedStorage.listObjects(containerName, marker, buff, maxCount);
+		if (LOG.isTraceEnabled(Markers.MSG)) {
+			LOG.trace(
+					Markers.MSG, "Container \"{}\": generated list of {} objects, last one is \"{}\"",
+					containerName, buff.size(), lastObj
+			);
+		}
+		return lastObj;
+	}
+
+	protected void handleContainerCreate(final String containerName) {
 		sharedStorage.createContainer(containerName);
 	}
 
-	private void handleContainerExists(String containerName, ChannelHandlerContext ctx) {
+	private void handleContainerExists(final String containerName, final ChannelHandlerContext ctx) {
 		if (sharedStorage.getContainer(containerName) == null) {
 			setHttpResponseStatusInContext(ctx, NOT_FOUND);
 		}
 	}
 
-	private void handleContainerDelete(String containerName) {
+	private void handleContainerDelete(final String containerName) {
 		sharedStorage.deleteContainer(containerName);
 	}
 
-	protected void setHttpResponseStatusInContext(ChannelHandlerContext ctx, HttpResponseStatus status) {
+	protected void setHttpResponseStatusInContext(final ChannelHandlerContext ctx, final HttpResponseStatus status) {
 		ctx.attr(AttributeKey.<HttpResponseStatus>valueOf(responseStatusKey)).set(status);
 	}
 

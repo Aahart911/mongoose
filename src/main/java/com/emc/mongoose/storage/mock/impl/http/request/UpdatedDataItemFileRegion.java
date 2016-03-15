@@ -17,7 +17,7 @@ public class UpdatedDataItemFileRegion<T extends MutableDataItemMock> extends Da
 	private final ContentSource contentSource;
 
 
-	public UpdatedDataItemFileRegion(T dataItem) {
+	public UpdatedDataItemFileRegion(final T dataItem) {
 		super(dataItem);
 		currDataLayerIdx = dataObject.getCurrLayerIndex();
 		contentSource = ContentSourceBase.getDefault();

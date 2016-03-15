@@ -5,7 +5,6 @@ import com.emc.mongoose.common.log.LogUtil;
 import com.emc.mongoose.common.log.Markers;
 import com.emc.mongoose.core.api.io.conf.HttpRequestConfig;
 import com.emc.mongoose.core.api.item.data.ContainerHelper;
-import com.emc.mongoose.core.api.item.data.MutableDataItem;
 import com.emc.mongoose.storage.adapter.swift.HttpRequestConfigImpl;
 import com.emc.mongoose.storage.mock.api.ContainerMockException;
 import com.emc.mongoose.storage.mock.api.ContainerMockNotFoundException;
@@ -21,7 +20,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.AttributeKey;
@@ -47,16 +45,16 @@ import static io.netty.handler.codec.http.HttpResponseStatus.NO_CONTENT;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 @Sharable
-public class NagainaSwiftRequestHandler<T extends HttpDataItemMock>
+public final class NagainaSwiftRequestHandler<T extends HttpDataItemMock>
 extends NagainaRequestHandlerBase<T> {
 
-	private final static Logger LOG = LogManager.getLogger();
-	private final static ObjectMapper OBJ_MAPPER = new ObjectMapper();
-	private final static String AUTH = "auth", API_BASE_PATH_SWIFT = "v1";
+	private static final Logger LOG = LogManager.getLogger();
+	private static final ObjectMapper OBJ_MAPPER = new ObjectMapper();
+	private static final String AUTH = "auth", API_BASE_PATH_SWIFT = "v1";
 
 	private final int idRadix, prefixLength;
 
-	public NagainaSwiftRequestHandler(final AppConfig appConfig, HttpStorageMock<T> sharedStorage) {
+	public NagainaSwiftRequestHandler(final AppConfig appConfig, final HttpStorageMock<T> sharedStorage) {
 		super(appConfig, sharedStorage);
 		this.idRadix = appConfig.getItemNamingRadix();
 		final String prefix = appConfig.getItemNamingPrefix();
@@ -64,23 +62,23 @@ extends NagainaRequestHandlerBase<T> {
 	}
 
 	@Override
-	protected boolean checkApiMatch(HttpRequest request) {
+	protected final boolean checkApiMatch(final HttpRequest request) {
 		String uri = request.getUri();
 		return uri.startsWith(AUTH, 1) || uri.startsWith(API_BASE_PATH_SWIFT, 1);
 	}
 
 	@Override
-	protected void handleActually(ChannelHandlerContext ctx) {
-		FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.EMPTY_BUFFER, false);
-		String uri = ctx.attr(AttributeKey.<HttpRequest>valueOf(requestKey))
+	protected final void handleActually(final ChannelHandlerContext ctx) {
+		final FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.EMPTY_BUFFER, false);
+		final String uri = ctx.attr(AttributeKey.<HttpRequest>valueOf(requestKey))
 				.get().getUri();
-		String method = ctx.attr(AttributeKey.<HttpRequest>valueOf(requestKey))
+		final String method = ctx.attr(AttributeKey.<HttpRequest>valueOf(requestKey))
 				.get().getMethod().toString().toUpperCase();
-		Long size = ctx.attr(AttributeKey.<Long>valueOf(contentLengthKey)).get();
+		final Long size = ctx.attr(AttributeKey.<Long>valueOf(contentLengthKey)).get();
 		ctx.attr(AttributeKey.<Boolean>valueOf(ctxWriteFlagKey)).set(true);
 		if (uri.startsWith(AUTH, 1)) {
 			if (method.equals(HttpRequestConfig.METHOD_GET)) {
-				String authToken = randomString(0x10);
+				final String authToken = randomString(0x10);
 				if(LOG.isTraceEnabled(Markers.MSG)) {
 					LOG.trace(Markers.MSG, "Created auth token: {}", authToken);
 				}
@@ -91,11 +89,10 @@ extends NagainaRequestHandlerBase<T> {
 				setHttpResponseStatusInContext(ctx, NOT_IMPLEMENTED);
 			}
 		} else {
-			String[] uriParams =
-					getUriParams(ctx.attr(AttributeKey.<HttpRequest>valueOf(requestKey))
-							.get().getUri(), 4);
+			final String[] uriParams =
+					getUriParams(uri, 4);
+			final String account = uriParams[1], containerName = uriParams[2], objId = uriParams[3];
 			try {
-				String account = uriParams[1], containerName = uriParams[2], objId = uriParams[3];
 				if (containerName != null) {
 					if (objId != null) {
 						long offset;
@@ -121,24 +118,19 @@ extends NagainaRequestHandlerBase<T> {
 					setHttpResponseStatusInContext(ctx, BAD_REQUEST);
 				}
 			}
-			catch(IllegalStateException | IllegalArgumentException e) {
+			catch(final IllegalStateException | IllegalArgumentException e) {
 				setHttpResponseStatusInContext(ctx, INTERNAL_SERVER_ERROR);
 			}
 		}
-		if (ctx.attr(AttributeKey.<Boolean>valueOf(ctxWriteFlagKey)).get()) {
-			HttpResponseStatus status = ctx.attr(AttributeKey.<HttpResponseStatus>valueOf(responseStatusKey)).get();
-			response.setStatus(status != null ? status : OK);
-			HttpHeaders.setContentLength(response, 0);
-			ctx.write(response);
-		}
+		writeResponse(ctx.attr(AttributeKey.<Boolean>valueOf(ctxWriteFlagKey)).get(), ctx);
 	}
 
 	@Override
-	protected void handleContainerList(String containerName, ChannelHandlerContext ctx) {
+	protected void handleContainerList(final String containerName, final ChannelHandlerContext ctx) {
 		int maxCount = ContainerHelper.DEFAULT_PAGE_SIZE;
 		String marker = null;
-		String uri = ctx.attr(AttributeKey.<HttpRequest>valueOf(requestKey)).get().getUri();
-		QueryStringDecoder queryStringDecoder = new QueryStringDecoder(uri);
+		final String uri = ctx.attr(AttributeKey.<HttpRequest>valueOf(requestKey)).get().getUri();
+		final QueryStringDecoder queryStringDecoder = new QueryStringDecoder(uri);
 		if (queryStringDecoder.parameters().containsKey("limit")) {
 			maxCount = Integer.parseInt(queryStringDecoder.parameters().get("limit").get(0));
 		} else {
@@ -147,17 +139,10 @@ extends NagainaRequestHandlerBase<T> {
 		if (queryStringDecoder.parameters().containsKey("marker")) {
 			marker = queryStringDecoder.parameters().get("marker").get(0);
 		}
-		List<T> buff = new ArrayList<>(maxCount);
-		T lastObj;
+		final List<T> buff = new ArrayList<>(maxCount);
 		try {
-			lastObj = sharedStorage.listObjects(containerName, marker, buff, maxCount);
-			if (LOG.isTraceEnabled(Markers.MSG)) {
-				LOG.trace(
-						Markers.MSG, "Bucket \"{}\": generated list of {} objects, last one is \"{}\"",
-						containerName, buff.size(), lastObj
-				);
-			}
-		} catch (ContainerMockNotFoundException e) {
+			listContainer(containerName, marker, buff, maxCount);
+		} catch (final ContainerMockNotFoundException e) {
 			setHttpResponseStatusInContext(ctx, NOT_FOUND);
 			return;
 		} catch (ContainerMockException e) {
@@ -165,7 +150,7 @@ extends NagainaRequestHandlerBase<T> {
 			return;
 		}
 		if(buff.size() > 0) {
-			JsonNode nodeRoot = OBJ_MAPPER.createArrayNode();
+			final JsonNode nodeRoot = OBJ_MAPPER.createArrayNode();
 			ObjectNode node;
 			for(final T dataObject : buff) {
 				node = OBJ_MAPPER.createObjectNode();
