@@ -80,16 +80,6 @@
 		"run" : {
 			"id" : null,
 			"file" : null,
-			"index" : {
-				"enabled" : true,
-				"jdbc" : {
-					"uri" : "file:tests.index",
-					"username" : null,
-					"password" : null,
-					"provider" : "h2",
-					"driver" : "org.h2.Driver"
-				}
-			},
 			"mode" : "standalone",
 			"name" : "mongoose",
 			"resume" : {

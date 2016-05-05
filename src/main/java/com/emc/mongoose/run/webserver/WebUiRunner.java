@@ -12,7 +12,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.WebAppContext;
 //
 import java.nio.file.Paths;
-
+//
 import static com.emc.mongoose.common.conf.Constants.DIR_WEBAPP;
 import static com.emc.mongoose.common.conf.Constants.DIR_WEBINF;
 //
@@ -36,21 +36,11 @@ implements Runnable {
 		webAppContext.setParentLoaderPriority(true);
 		server.setHandler(webAppContext);
 		//
-		final AppConfig appConfig = BasicConfig.THREAD_CONTEXT.get();
-		final TestIndexer indexerThread = TestIndexer.getInstance(appConfig);
-		try {
-			indexerThread.start();
-		} catch(final Exception e) {
-			LogUtil.exception(LOG, Level.WARN, e, "Failed to start the tests indexer");
-		}
-		//
 		try {
 			server.start();
 			server.join();
 		} catch (final Exception e) {
 			LogUtil.exception(LOG, Level.FATAL, e, "Web UI service failure");
-		} finally {
-			indexerThread.interrupt();
 		}
 	}
 }

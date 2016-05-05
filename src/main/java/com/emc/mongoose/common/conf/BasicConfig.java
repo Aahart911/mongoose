@@ -421,36 +421,6 @@ implements AppConfig {
 	}
 	//
 	@Override
-	public boolean getRunIndexEnabled() {
-		return getBoolean(KEY_RUN_INDEX_ENABLED);
-	}
-	//
-	@Override
-	public String getRunIndexJdbcUri() {
-		return getString(KEY_RUN_INDEX_JDBC_URI);
-	}
-	//
-	@Override
-	public String getRunIndexJdbcUsername() {
-		return getString(KEY_RUN_INDEX_JDBC_USERNAME);
-	}
-	//
-	@Override
-	public String getRunIndexJdbcPassword() {
-		return getString(KEY_RUN_INDEX_JDBC_PASSWORD);
-	}
-	//
-	@Override
-	public String getRunIndexJdbcProvider() {
-		return getString(KEY_RUN_INDEX_JDBC_PROVIDER);
-	}
-	//
-	@Override
-	public String getRunIndexJdbcDriver() {
-		return getString(KEY_RUN_INDEX_JDBC_DRIVER);
-	}
-	//
-	@Override
 	public boolean getRunResumeEnabled() {
 		return getBoolean(KEY_RUN_RESUME_ENABLED);
 	}

@@ -26,7 +26,6 @@ extends Cloneable, Configuration, Externalizable {
 	String KEY_IO_BUFFER_SIZE_MIN = "io.buffer.size.min";
 	String KEY_IO_BUFFER_SIZE_MAX = "io.buffer.size.max";
 	String KEY_ITEM_TYPE = "item.type";
-	String KEY_ITEM_CONTAINER_NAME = "item.container.name";
 	String KEY_ITEM_DATA_CONTENT_FILE = "item.data.content.file";
 	String KEY_ITEM_DATA_CONTENT_SEED = "item.data.content.seed";
 	String KEY_ITEM_DATA_CONTENT_RING_SIZE = "item.data.content.ringSize";
@@ -60,12 +59,6 @@ extends Cloneable, Configuration, Externalizable {
 	String KEY_RUN_NAME = "run.name";
 	String KEY_RUN_VERSION = "run.version";
 	String KEY_RUN_FILE = "run.file";
-	String KEY_RUN_INDEX_ENABLED = "run.index.enabled";
-	String KEY_RUN_INDEX_JDBC_URI = "run.index.jdbc.uri";
-	String KEY_RUN_INDEX_JDBC_USERNAME = "run.index.jdbc.username";
-	String KEY_RUN_INDEX_JDBC_PASSWORD = "run.index.jdbc.password";
-	String KEY_RUN_INDEX_JDBC_PROVIDER = "run.index.jdbc.provider";
-	String KEY_RUN_INDEX_JDBC_DRIVER = "run.index.jdbc.driver";
 	String KEY_RUN_RESUME_ENABLED = "run.resume.enabled";
 	String KEY_STORAGE_TYPE = "storage.type";
 	String KEY_STORAGE_ADDRS = "storage.addrs";
@@ -200,18 +193,6 @@ extends Cloneable, Configuration, Externalizable {
 	String getRunVersion();
 
 	String getRunFile();
-
-	boolean getRunIndexEnabled();
-
-	String getRunIndexJdbcUri();
-
-	String getRunIndexJdbcUsername();
-
-	String getRunIndexJdbcPassword();
-
-	String getRunIndexJdbcProvider();
-
-	String getRunIndexJdbcDriver();
 
 	boolean getRunResumeEnabled();
 
