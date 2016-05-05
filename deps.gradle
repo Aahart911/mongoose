@@ -18,6 +18,8 @@ ext {
 	commons_lang = [ "commons-lang:commons-lang:2.6" ]
 	commons_logging = [ "commons-logging:commons-logging:1.2" ]
 
+	h2 = [ "com.h2database:h2:1.4.191" ]
+
 	httpcore = [ "org.apache.httpcomponents:httpcore-nio:4.4.4" ]
 	httpcore_nio = [ "org.apache.httpcomponents:httpcore-nio:4.4.4" ]
 

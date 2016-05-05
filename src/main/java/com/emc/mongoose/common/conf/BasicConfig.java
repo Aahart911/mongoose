@@ -133,11 +133,6 @@ implements AppConfig {
 	}
 	//
 	@Override
-	public String getItemContainerName() {
-		return getString(KEY_ITEM_CONTAINER_NAME);
-	}
-	//
-	@Override
 	public String getItemDataContentFile() {
 		return getString(KEY_ITEM_DATA_CONTENT_FILE);
 	}
@@ -423,6 +418,36 @@ implements AppConfig {
 	@Override
 	public String getRunFile() {
 		return getString(KEY_RUN_FILE);
+	}
+	//
+	@Override
+	public boolean getRunIndexEnabled() {
+		return getBoolean(KEY_RUN_INDEX_ENABLED);
+	}
+	//
+	@Override
+	public String getRunIndexJdbcUri() {
+		return getString(KEY_RUN_INDEX_JDBC_URI);
+	}
+	//
+	@Override
+	public String getRunIndexJdbcUsername() {
+		return getString(KEY_RUN_INDEX_JDBC_USERNAME);
+	}
+	//
+	@Override
+	public String getRunIndexJdbcPassword() {
+		return getString(KEY_RUN_INDEX_JDBC_PASSWORD);
+	}
+	//
+	@Override
+	public String getRunIndexJdbcProvider() {
+		return getString(KEY_RUN_INDEX_JDBC_PROVIDER);
+	}
+	//
+	@Override
+	public String getRunIndexJdbcDriver() {
+		return getString(KEY_RUN_INDEX_JDBC_DRIVER);
 	}
 	//
 	@Override

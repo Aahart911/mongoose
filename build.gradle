@@ -347,6 +347,7 @@ dependencies {
 		library.commons_configuration,
 		library.log4j_api_plus_core,
 		library.jetty_svc,
+		library.h2,
 	)
 	webserverRuntime (
 		library.runtime_logging,

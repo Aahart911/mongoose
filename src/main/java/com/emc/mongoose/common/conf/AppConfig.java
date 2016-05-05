@@ -60,6 +60,12 @@ extends Cloneable, Configuration, Externalizable {
 	String KEY_RUN_NAME = "run.name";
 	String KEY_RUN_VERSION = "run.version";
 	String KEY_RUN_FILE = "run.file";
+	String KEY_RUN_INDEX_ENABLED = "run.index.enabled";
+	String KEY_RUN_INDEX_JDBC_URI = "run.index.jdbc.uri";
+	String KEY_RUN_INDEX_JDBC_USERNAME = "run.index.jdbc.username";
+	String KEY_RUN_INDEX_JDBC_PASSWORD = "run.index.jdbc.password";
+	String KEY_RUN_INDEX_JDBC_PROVIDER = "run.index.jdbc.provider";
+	String KEY_RUN_INDEX_JDBC_DRIVER = "run.index.jdbc.driver";
 	String KEY_RUN_RESUME_ENABLED = "run.resume.enabled";
 	String KEY_STORAGE_TYPE = "storage.type";
 	String KEY_STORAGE_ADDRS = "storage.addrs";
@@ -102,8 +108,6 @@ extends Cloneable, Configuration, Externalizable {
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	ItemType getItemType();
-
-	String getItemContainerName();
 
 	String getItemDataContentFile();
 
@@ -196,6 +200,18 @@ extends Cloneable, Configuration, Externalizable {
 	String getRunVersion();
 
 	String getRunFile();
+
+	boolean getRunIndexEnabled();
+
+	String getRunIndexJdbcUri();
+
+	String getRunIndexJdbcUsername();
+
+	String getRunIndexJdbcPassword();
+
+	String getRunIndexJdbcProvider();
+
+	String getRunIndexJdbcDriver();
 
 	boolean getRunResumeEnabled();
 
