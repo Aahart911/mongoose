@@ -1,4 +1,4 @@
-package com.emc.mongoose.common.io;
+package com.emc.mongoose.common.conf;
 
 import com.emc.mongoose.common.conf.Constants;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -12,6 +12,9 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.regex.Pattern;
+
+import static java.util.regex.Pattern.compile;
 
 /**
  * Created on 04.04.16.
@@ -19,9 +22,10 @@ import java.util.*;
 public class JsonUtil {
 
 	private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+	private static final Pattern COMMENT_PATTERN = Pattern.compile("[ ]*//.+");
+
 
 	/**
-	 *
 	 * @param pathString - the string of the path to a file
 	 * @return json that contains the file tree if the file is a directory,
 	 * or the name of the file otherwise
@@ -32,7 +36,6 @@ public class JsonUtil {
 	}
 
 	/**
-	 *
 	 * @param file - some file
 	 * @return json that contains the file tree if the file is a directory,
 	 * or the name of the file otherwise
@@ -90,15 +93,23 @@ public class JsonUtil {
 	}
 
 	public static String readFileToString(final Path path)
-	throws IOException {
-		final StringBuilder fileTextBuilder = new StringBuilder();
-		try(
-			final BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.US_ASCII)
+			throws IOException {
+		String string;
+		try (
+				final BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.US_ASCII)
 		) {
-			String line;
-			while ((line = reader.readLine()) != null) {
-				fileTextBuilder.append(line).append('\n');
-			}
+			string = readString(reader);
+		}
+		return string;
+	}
+
+	public static String readString(final BufferedReader reader)
+			throws IOException {
+		final StringBuilder fileTextBuilder = new StringBuilder();
+		String line;
+		while ((line = reader.readLine()) != null) {
+			line = COMMENT_PATTERN.matcher(line).replaceAll("");
+			fileTextBuilder.append(line).append('\n');
 		}
 		return fileTextBuilder.toString();
 	}
